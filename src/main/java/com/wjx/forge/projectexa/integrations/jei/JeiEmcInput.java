@@ -16,6 +16,7 @@ import mezz.jei.gui.input.handlers.SameElementInputHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Optional;
@@ -58,7 +59,10 @@ public final class JeiEmcInput {
                     if (!input.isSimulate()) {
                         ItemStack stack = clicked.getCheatItemStack(ingredients);
                         PacketHandler.sendToServer(new PacketJeiTransmute(stack.copyWithCount(1),
-                                minecraft.player.containerMenu.containerId, target, one));
+                                minecraft.player.containerMenu.containerId, target, one,
+                                target == -1 && screen instanceof CreativeModeInventoryScreen,
+                                target == -1 && screen instanceof CreativeModeInventoryScreen
+                                        ? minecraft.player.containerMenu.getCarried().copy() : ItemStack.EMPTY));
                     }
                     return new SameElementInputHandler(handler, clicked::isMouseOver);
                 });
