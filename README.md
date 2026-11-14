@@ -54,3 +54,7 @@ The release JAR is written to `build/libs/` and includes `projectexa` and `arcan
 ## License and attribution
 
 The original MIT license and Donovan_DMC copyright notice are retained. See [LICENSE](LICENSE) and [NOTICE](NOTICE.md). ProjectE attribution is retained; Arcanum is not an official ProjectE addon or ProjectE-supported project.
+
+### JEI EMC retrieval
+
+In a container screen with JEI cheat mode disabled, use JEI's configured cheat-item bindings to transmute learned items. By default, left or right click retrieves one item and Shift + left click or middle click retrieves a stack. JEI's give mode determines whether items go to the cursor or inventory; its hotbar option also applies. Items must have a positive EMC value, and the amount is limited by the balance and available space.

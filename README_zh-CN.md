@@ -55,3 +55,7 @@ Linux 或 macOS：
 ## 许可证与致谢
 
 项目保留原始 MIT 许可证及 Donovan_DMC 的版权声明，详见 [LICENSE](LICENSE) 和 [NOTICE](NOTICE.md)。项目也保留 ProjectE 的致谢信息；Arcanum 不是官方 ProjectE 附属项目，也不受 ProjectE 官方支持。
+
+### JEI EMC 取物
+
+在非作弊模式的容器界面中，使用 JEI 配置的作弊取物按键提取已学习的物品：默认左键或右键取一个，Shift + 左键或中键取一组。物品放在光标或物品栏，遵循 JEI 的取物目标设置；开启 JEI 的快捷栏取物选项后，也可使用快捷栏按键。物品必须具有正 EMC，数量受余额和目标空间限制。

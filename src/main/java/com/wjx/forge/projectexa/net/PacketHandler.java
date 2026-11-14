@@ -19,6 +19,7 @@ import com.wjx.forge.projectexa.net.packets.to_server.PacketCreateRecipeTransmut
 import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutationTablet;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutationTabletWithRecipe;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketStoneTableAction;
+import com.wjx.forge.projectexa.net.packets.to_server.PacketJeiTransmute;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketTaczTransmutation;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketRsiEmcEstimate;
 import net.minecraft.network.FriendlyByteBuf;
@@ -36,7 +37,7 @@ import java.util.function.Function;
 @SuppressWarnings("unused")
 public class PacketHandler {
 
-    private static final String PROTOCOL_VERSION = Integer.toString(3);
+    private static final String PROTOCOL_VERSION = Integer.toString(4);
     private static final SimpleChannel HANDLER = NetworkRegistry.ChannelBuilder
             .named(Main.rl("primary"))
             .clientAcceptedVersions(PROTOCOL_VERSION::equals)
@@ -70,6 +71,7 @@ public class PacketHandler {
         registerClientToServer(PacketRsiEmcEstimate.class, PacketRsiEmcEstimate::decode);
         registerServerToClient(PacketRsiEmcEstimateResult.class, PacketRsiEmcEstimateResult::decode);
         registerClientToServer(PacketArcaneAnvilName.class, PacketArcaneAnvilName::decode);
+        registerClientToServer(PacketJeiTransmute.class, PacketJeiTransmute::decode);
     }
 
     private static <MSG extends IPacket> void registerClientToServer(Class<MSG> type, Function<FriendlyByteBuf, MSG> decoder) {

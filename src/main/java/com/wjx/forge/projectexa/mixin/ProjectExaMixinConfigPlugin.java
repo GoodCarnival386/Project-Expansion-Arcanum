@@ -49,6 +49,12 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith(".JeiEmcCheatInputMixin")) {
+            return hasClass("mezz.jei.gui.input.handlers.CheatInputHandler");
+        }
+        if (mixinClassName.endsWith(".JeiEmcLegacyInputMixin")) {
+            return !hasClass("mezz.jei.gui.input.handlers.CheatInputHandler");
+        }
         // RSI supports Beyond Dimensions without RS. Its ledger still contains
         // legacy RS bytecode, so transforming it without this API forces
         // ModLauncher to resolve a class that is intentionally not installed.
@@ -68,6 +74,14 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
             return hasCreateMethod(targetClassName, LEGACY_CREATE_DESCRIPTOR);
         }
         return true;
+    }
+
+    private static boolean hasClass(String name) {
+        String resource = name.replace('.', '/') + ".class";
+        ClassLoader loader = ProjectExaMixinConfigPlugin.class.getClassLoader();
+        ClassLoader context = Thread.currentThread().getContextClassLoader();
+        return (loader != null && loader.getResource(resource) != null)
+                || (context != null && context.getResource(resource) != null);
     }
 
     private static boolean hasCreateMethod(String targetClassName, String descriptor) {

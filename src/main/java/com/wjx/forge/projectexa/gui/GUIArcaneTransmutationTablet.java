@@ -92,10 +92,6 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
         }
         craftingPanelVisible = selectedStation == 0;
         stationAnimation.reset(selectedStation, Util.getMillis());
-        // Center the main screen together with the enlarged side panel.
-        // At the minimum GUI width the station tabs move above the panel.
-        int sideWidth = Math.min(164, width - imageWidth);
-        leftPos = (width - imageWidth + sideWidth) / 2;
         smithingArmorStand = new ArmorStand(minecraft.level, 0.0D, 0.0D, 0.0D);
         smithingArmorStand.setNoBasePlate(true);
         smithingArmorStand.setShowArms(true);
