@@ -230,16 +230,6 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
 
     public boolean isStation(int value) { return station == value && canUseStation(value); }
 
-    public List<Slot> getStationSlots(int value) {
-        return switch (value) {
-            case 0 -> slots.subList(RESULT, SMITHING);
-            case 1 -> slots.subList(SMITHING, STONECUTTING);
-            case 2 -> slots.subList(STONECUTTING, ANVIL);
-            case 3 -> slots.subList(ANVIL, slots.size());
-            default -> List.of();
-        };
-    }
-
     public StonecutterMenu getStonecutter() { return stonecutter; }
     public AnvilMenu getAnvil() { return anvil; }
 

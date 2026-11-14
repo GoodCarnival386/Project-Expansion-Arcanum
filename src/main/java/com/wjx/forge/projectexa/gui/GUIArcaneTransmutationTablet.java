@@ -146,21 +146,23 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     }
 
     private void positionStationButtons() {
-        boolean horizontal = selectedStation >= 0 && width < imageWidth + 164;
         float openness = stationAnimation.openness();
-        if (horizontal) openness = StationPanelAnimation.ease(Math.min(1, openness * 2));
-        // Spread horizontally before forming a row, so the square tabs never
-        // overlap while changing between the vertical dock and horizontal bar.
-        float xProgress = horizontal ? StationPanelAnimation.ease(Math.min(1, openness * 2)) : openness;
-        float yProgress = horizontal ? StationPanelAnimation.ease(Math.max(0, openness * 2 - 1)) : openness;
+        int expandedX = stationPanelDimension(-95, STATION_PANEL_X - 20);
+        int x = leftPos + Math.round(-20 + (expandedX + 20) * openness);
+        // If the left-hand dock leaves the viewport, move it alongside the
+        // main panel's left edge, over the tool panel if the gap is too narrow.
+        if (x < 0) x = leftPos - 20;
+        x = Math.max(0, Math.min(Math.max(0, width - 18), x));
+        int visibleCount = 0;
+        for (Button button : stationButtons) if (button.visible) visibleCount++;
+        int columnHeight = Math.max(18, visibleCount * 20 - 2);
+        int y = Math.max(0, Math.min(topPos + 10, height - columnHeight));
         int visibleIndex = 0;
         for (int i = 0; i < stationButtons.length; i++) {
             if (!stationButtons[i].visible) continue;
             int index = visibleIndex++;
-            int expandedX = horizontal ? STATION_PANEL_X + index * 20 : stationPanelDimension(-95, STATION_PANEL_X - 20);
-            int expandedY = horizontal ? -10 : 10 + index * 20;
-            stationButtons[i].setX(leftPos + Math.round(-20 + (expandedX + 20) * xProgress));
-            stationButtons[i].setY(topPos + Math.round(10 + index * 20 + (expandedY - 10 - index * 20) * yProgress));
+            stationButtons[i].setX(x);
+            stationButtons[i].setY(y + index * 20);
         }
     }
 
@@ -229,29 +231,18 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     private int stationPanelHeight() { return stationPanelDimension(89, STATION_PANEL_HEIGHT); }
     private int stationPanelLeft() { return leftPos + stationPanelDimension(-75, STATION_PANEL_X); }
     private float stationPanelOpenness() {
-        float openness = stationAnimation.openness();
-        // On narrow screens, finish arranging the tabs before revealing the
-        // panel underneath them; closing follows the same path in reverse.
-        return width < imageWidth + 164
-                ? StationPanelAnimation.ease(Math.max(0, openness * 2 - 1)) : openness;
+        return stationAnimation.openness();
     }
     private int stationPanelOffset() { return Math.round((1 - stationPanelOpenness()) * stationPanelWidth()); }
 
     public void beginStationPanelRender(GuiGraphics graphics) {
-        beginStationPanelRender(graphics, false);
-    }
-
-    private void beginStationPanelRender(GuiGraphics graphics, boolean previous) {
         // Tooltip text can still be queued when Polymorph renders in
         // ScreenEvent.Render.Post. Submit it before restricting the scissor.
         graphics.flush();
         int x = stationPanelLeft(), y = topPos + STATION_PANEL_Y;
-        int split = x + Math.round(stationPanelWidth() * stationAnimation.switchProgress());
-        boolean switching = stationAnimation.previousStation() >= 0;
-        int inset = switching ? 4 : 0;
-        int left = previous ? Math.max(split, x + inset) : x + inset;
-        int right = previous ? x + stationPanelWidth() - inset : Math.min(split, x + stationPanelWidth() - inset);
-        graphics.enableScissor(left, y + inset, Math.max(left, right), y + stationPanelHeight() - inset);
+        int inset = stationAnimation.isResizing() ? 4 : 0;
+        graphics.enableScissor(x + inset, y + inset,
+                x + stationPanelWidth() - inset, y + stationPanelHeight() - inset);
         graphics.pose().pushPose();
         int nativeX = leftPos + (selectedStation == 0 ? -75 : STATION_PANEL_X);
         graphics.pose().translate(x - nativeX + stationPanelOffset(), 0, 0);
@@ -404,18 +395,10 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
         if (selectedStation >= 0) {
-            if (stationAnimation.previousStation() >= 0) drawStationTransitionFrame(graphics);
-            renderPreviousStation(graphics, partialTick, mouseX, mouseY);
+            if (stationAnimation.isResizing()) drawStationTransitionFrame(graphics);
             beginStationPanelRender(graphics);
             renderStationContents(graphics, partialTick, mouseX, mouseY);
             endStationPanelRender(graphics);
-        }
-        for (int i = 0; i < stationButtons.length; i++) {
-            Button button = stationButtons[i];
-            if (!button.visible) continue;
-            int x = button.getX(), y = button.getY();
-            drawStationButton(graphics, i, x, y, button.active,
-                    i == stationAnimation.target(), button.isMouseOver(mouseX, mouseY));
         }
         if (filterBox != null) filterBox.render(graphics, mouseX, mouseY, partialTick);
         renderIfHovered(graphics, mouseX, mouseY, previous, 196, 0);
@@ -439,35 +422,6 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
         graphics.fill(x, y, right, bottom, 0xFF202020);
         graphics.fill(x + 2, y + 2, right - 2, bottom - 2, 0xFF777777);
         graphics.fill(x + 4, y + 4, right - 4, bottom - 4, 0xFF454545);
-    }
-
-    private void renderPreviousStation(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        int previous = stationAnimation.previousStation();
-        if (previous < 0) return;
-        int next = selectedStation;
-        boolean nameVisible = anvilName.visible;
-        selectedStation = previous;
-        craftingPanelVisible = previous == 0;
-        anvilName.visible = previous == 3;
-        beginStationPanelRender(graphics, true);
-        try {
-            renderStationContents(graphics, partialTick, mouseX, mouseY);
-            graphics.pose().pushPose();
-            graphics.pose().translate(leftPos, topPos, 0);
-            for (Slot slot : menu.getStationSlots(previous)) {
-                ItemStack stack = slot.getItem();
-                if (!stack.isEmpty()) {
-                    graphics.renderItem(stack, slot.x, slot.y);
-                    graphics.renderItemDecorations(font, stack, slot.x, slot.y);
-                }
-            }
-            graphics.pose().popPose();
-        } finally {
-            endStationPanelRender(graphics);
-            selectedStation = next;
-            craftingPanelVisible = next == 0;
-            anvilName.visible = nameVisible;
-        }
     }
 
     private void renderStationContents(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
@@ -674,6 +628,16 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
             graphics.drawString(font, countText, -font.width(countText), 0, 0xFFFFFF, true);
             pose.popPose();
         }
+        // Draw after slot items so a dock over the tool panel stays readable.
+        pose.pushPose();
+        pose.translate(-leftPos, -topPos, 300F);
+        for (int i = 0; i < stationButtons.length; i++) {
+            Button button = stationButtons[i];
+            if (!button.visible) continue;
+            drawStationButton(graphics, i, button.getX(), button.getY(), button.active,
+                    i == stationAnimation.target(), button.isMouseOver(mouseX, mouseY));
+        }
+        pose.popPose();
     }
 
     @Override
@@ -694,11 +658,15 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
 
     @Override
     public boolean mouseClicked(double x, double y, int mouseButton) {
-        if (stationAnimation.isMoving() && x < leftPos) {
-            int station = hoveredStation((int) x, (int) y);
-            if (station >= 0 && mouseButton == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+        int station = hoveredStation((int) x, (int) y);
+        if (station >= 0) {
+            if (mouseButton == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                setFocused(stationButtons[station]);
                 stationButtons[station].mouseClicked(x, y, mouseButton);
             }
+            return true;
+        }
+        if (stationAnimation.isMoving() && x < leftPos) {
             return true;
         }
         if (selectedStation == 2 && mouseButton == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
@@ -755,6 +723,7 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
 
     @Override
     protected boolean isHovering(int x, int y, int w, int h, double mouseX, double mouseY) {
+        if (hoveredStation((int) mouseX, (int) mouseY) >= 0) return false;
         if (x < 0 && stationAnimation.isMoving()) return false;
         return super.isHovering(x, y, w, h, mouseX, mouseY);
     }
