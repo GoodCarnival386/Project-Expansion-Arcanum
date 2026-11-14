@@ -641,6 +641,7 @@
   "text.projectexa.jei_transmute.no_emc": "转化失败：%s 没有有效的 EMC 值。",
   "text.projectexa.jei_transmute.insufficient_emc": "转化失败：EMC 不足，至少需要 %s EMC。",
   "text.projectexa.jei_transmute.different_item": "转化失败：目标位置已有其他物品。",
+  "text.projectexa.jei_transmute.pending": "转化失败：上一次取物还在处理中。",
   "text.projectexa.jei_transmute.no_space": "转化失败：目标位置没有足够空间。",
   "text.projectexa.jei_transmuted": "已转化 %s 个 %s，消耗 %s EMC",
   "gui.projectexa.rsi.emc_material": "（转化 %s 个，%s EMC）",

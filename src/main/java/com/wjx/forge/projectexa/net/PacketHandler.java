@@ -20,6 +20,7 @@ import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutat
 import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutationTabletWithRecipe;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketStoneTableAction;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketJeiTransmute;
+import com.wjx.forge.projectexa.net.packets.to_server.PacketWorldEmcPick;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketJeiCreativeCursorAck;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketTaczTransmutation;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketRsiEmcEstimate;
@@ -38,7 +39,7 @@ import java.util.function.Function;
 @SuppressWarnings("unused")
 public class PacketHandler {
 
-    private static final String PROTOCOL_VERSION = Integer.toString(5);
+    private static final String PROTOCOL_VERSION = Integer.toString(9);
     private static final SimpleChannel HANDLER = NetworkRegistry.ChannelBuilder
             .named(Main.rl("primary"))
             .clientAcceptedVersions(PROTOCOL_VERSION::equals)
@@ -75,6 +76,9 @@ public class PacketHandler {
         registerClientToServer(PacketJeiTransmute.class, PacketJeiTransmute::decode);
         registerClientToServer(PacketJeiCreativeCursorAck.class, PacketJeiCreativeCursorAck::decode);
         registerServerToClient(PacketJeiCreativeCursor.class, PacketJeiCreativeCursor::decode);
+        registerServerToClient(PacketJeiEmcConfig.class, PacketJeiEmcConfig::decode);
+        registerClientToServer(PacketWorldEmcPick.class, PacketWorldEmcPick::decode);
+        registerServerToClient(PacketWorldPickRsiFailure.class, PacketWorldPickRsiFailure::decode);
     }
 
     private static <MSG extends IPacket> void registerClientToServer(Class<MSG> type, Function<FriendlyByteBuf, MSG> decoder) {

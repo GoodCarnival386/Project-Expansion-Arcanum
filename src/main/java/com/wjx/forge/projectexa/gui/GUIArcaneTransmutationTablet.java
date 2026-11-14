@@ -418,10 +418,17 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     private void drawStationTransitionFrame(GuiGraphics graphics) {
         int x = stationPanelLeft() + stationPanelOffset(), y = topPos + STATION_PANEL_Y;
         int right = stationPanelLeft() + stationPanelWidth(), bottom = y + stationPanelHeight();
-        if (right - x < 8) return;
-        graphics.fill(x, y, right, bottom, 0xFF202020);
-        graphics.fill(x + 2, y + 2, right - 2, bottom - 2, 0xFF777777);
-        graphics.fill(x + 4, y + 4, right - 4, bottom - 4, 0xFF454545);
+        drawStationFrame(graphics, x, y, right - x, bottom - y);
+    }
+
+    private static void drawStationFrame(GuiGraphics graphics, int x, int y, int width, int height) {
+        if (width < 8) return;
+        graphics.fill(x, y, x + width, y + height, 0xFF202020);
+        graphics.fill(x + 2, y + 2, x + width - 2, y + height - 2, 0xFF777777);
+        if (width > 8) {
+            // Tile the bare stone below the crafting grid, to the left of its arrow.
+            graphics.blitRepeating(TEXTURE, x + 4, y + 4, width - 8, height - 8, 183, 93, 22, 24);
+        }
     }
 
     private void renderStationContents(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
@@ -455,9 +462,7 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
 
     private void renderStationPanel(GuiGraphics graphics) {
         int x = leftPos + STATION_PANEL_X, y = topPos + STATION_PANEL_Y;
-        graphics.fill(x, y, x + STATION_PANEL_WIDTH, y + STATION_PANEL_HEIGHT, 0xFF202020);
-        graphics.fill(x + 2, y + 2, x + STATION_PANEL_WIDTH - 2, y + STATION_PANEL_HEIGHT - 2, 0xFF777777);
-        graphics.fill(x + 4, y + 4, x + STATION_PANEL_WIDTH - 4, y + STATION_PANEL_HEIGHT - 4, 0xFF454545);
+        drawStationFrame(graphics, x, y, STATION_PANEL_WIDTH, STATION_PANEL_HEIGHT);
         String title = switch (selectedStation) {
             case 1 -> "container.upgrade";
             case 2 -> "container.stonecutter";
@@ -512,9 +517,7 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     }
 
     private static void drawSlot(GuiGraphics graphics, int x, int y) {
-        graphics.fill(x, y, x + 18, y + 18, 0xFF222222);
-        graphics.fill(x + 1, y + 1, x + 18, y + 18, 0xFF777777);
-        graphics.fill(x + 1, y + 1, x + 17, y + 17, 0xFF383838);
+        graphics.blit(TEXTURE, x, y, 195, 38, 18, 18);
     }
 
     private void drawStationIcon(GuiGraphics graphics, int station, int x, int y) {

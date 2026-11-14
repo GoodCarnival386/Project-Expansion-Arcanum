@@ -1,24 +1,34 @@
 package com.wjx.forge.projectexa.integrations.jei;
 
 import com.wjx.forge.projectexa.mixin.JeiCommandUtilAccessor;
+import com.wjx.forge.projectexa.config.JeiEmcClientState;
+import com.wjx.forge.projectexa.util.Util;
+import com.mojang.blaze3d.platform.InputConstants;
+import moze_intel.projecte.api.capabilities.IKnowledgeProvider;
+import moze_intel.projecte.api.proxy.IEMCProxy;
 import mezz.jei.common.config.GiveMode;
 import mezz.jei.common.config.IClientConfig;
 import mezz.jei.common.config.IClientToggleState;
 import mezz.jei.gui.util.CommandUtil;
 import com.wjx.forge.projectexa.net.PacketHandler;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketJeiTransmute;
+import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutationTablet;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.common.input.IInternalKeyMappings;
 import mezz.jei.gui.input.CombinedRecipeFocusSource;
 import mezz.jei.gui.input.IUserInputHandler;
 import mezz.jei.gui.input.UserInput;
+import mezz.jei.gui.input.InputType;
 import mezz.jei.gui.input.handlers.SameElementInputHandler;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.item.ItemStack;
 
+import java.math.BigInteger;
 import java.util.Optional;
 
 public final class JeiEmcInput {
@@ -27,9 +37,9 @@ public final class JeiEmcInput {
     public static Optional<IUserInputHandler> handle(IUserInputHandler handler, Screen screen, UserInput input,
             IInternalKeyMappings keys, CombinedRecipeFocusSource source, IIngredientManager ingredients,
             IClientToggleState toggleState, CommandUtil commandUtil) {
-        if (!(screen instanceof AbstractContainerScreen<?>)) return Optional.empty();
+        if (!JeiEmcClientState.isEnabled() || !(screen instanceof AbstractContainerScreen<?>)) return Optional.empty();
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null) return Optional.empty();
+        if (minecraft.player == null || !PacketOpenArcaneTransmutationTablet.hasTablet(minecraft.player)) return Optional.empty();
         IClientConfig config = ((JeiCommandUtilAccessor) (Object) commandUtil).projectexa$getClientConfig();
         boolean stackKey;
         boolean oneKey;
@@ -54,15 +64,38 @@ public final class JeiEmcInput {
         }
         final int target = destination;
         final boolean one = single;
-        return source.getIngredientUnderMouse(input, keys).filter(clicked -> !clicked.getCheatItemStack(ingredients).isEmpty())
-                .findFirst().map(clicked -> {
+        boolean recipeClick = input.getKey().getType() == InputConstants.Type.MOUSE
+                && (input.getKey().getValue() == 0 || input.getKey().getValue() == 1);
+        return source.getIngredientUnderMouse(input, keys)
+                .filter(clicked -> !clicked.getCheatItemStack(ingredients).isEmpty())
+                .findFirst().filter(clicked -> {
+                    ItemStack stack = clicked.getCheatItemStack(ingredients);
+                    if (!recipeClick) return true;
+                    ItemStack clean = Util.cleanStack(stack);
+                    IKnowledgeProvider provider = Util.getKnowledgeProvider(minecraft.player);
+                    if (clean.isEmpty() || provider == null || !provider.hasKnowledge(clean)) return false;
+                    long value = IEMCProxy.INSTANCE.getValue(clean);
+                    if (value <= 0) return false;
+                    if (provider.getEmc().compareTo(BigInteger.valueOf(value)) < 0) {
+                        // JEI selects its recipe handler during SIMULATE and later executes that handler.
+                        // Report on the initial mouse press without consuming the input.
+                        if (input.getInputType() != InputType.EXECUTE) {
+                            minecraft.player.sendSystemMessage(Component.translatable(
+                                    "text.projectexa.jei_transmute.insufficient_emc", Long.toString(value))
+                                    .withStyle(ChatFormatting.RED));
+                        }
+                        return false;
+                    }
+                    return true;
+                })
+                .map(clicked -> {
                     if (!input.isSimulate()) {
                         ItemStack stack = clicked.getCheatItemStack(ingredients);
                         PacketHandler.sendToServer(new PacketJeiTransmute(stack.copyWithCount(1),
                                 minecraft.player.containerMenu.containerId, target, one,
                                 target == -1 && screen instanceof CreativeModeInventoryScreen,
                                 target == -1 && screen instanceof CreativeModeInventoryScreen
-                                        ? minecraft.player.containerMenu.getCarried().copy() : ItemStack.EMPTY));
+                                        ? minecraft.player.containerMenu.getCarried().copy() : ItemStack.EMPTY, false));
                     }
                     return new SameElementInputHandler(handler, clicked::isMouseOver);
                 });

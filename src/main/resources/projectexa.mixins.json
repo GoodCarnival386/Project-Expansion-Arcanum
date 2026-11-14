@@ -29,6 +29,8 @@
 		"JeiRecipeTransferButtonLegacyMixin",
 		"TaczGunHudEmcWarehouseMixin",
 		"TaczGunSmithTableScreenMixin",
+		"RsiJeiMiddleClickMixin",
+		"RsiWorldPickClientMixin",
 		"RsiCraftingPlanScreenMixin",
 		"RsiPlanRenderEngineMixin",
 		"RsiStripEntryAccessor"
@@ -50,6 +52,9 @@
 		"RsiExtractionLedgerMixin",
 		"RsiMaterialSourcesMixin",
 		"RsiBeyondDimensionsSessionMixin",
+		"RsiWorldPickInvoker",
+		"RsiJeiStoragePullMixin",
+		"RsiJeiStoragePullInvoker",
 		"RsiCraftingKnowledgeMixin",
 		"RsiCraftedOutputMixin",
 		"TouhouLittleMaidEmcWarehouseMixin",

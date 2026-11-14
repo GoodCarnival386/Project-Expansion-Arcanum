@@ -49,6 +49,20 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith(".RsiWorldPickClientMixin")
+                || mixinClassName.endsWith(".RsiWorldPickInvoker")) {
+            return supportsRsiWorldPick();
+        }
+        if (mixinClassName.endsWith(".RsiJeiMiddleClickMixin")
+                || mixinClassName.endsWith(".RsiJeiStoragePullMixin")
+                || mixinClassName.endsWith(".RsiJeiStoragePullInvoker")) {
+            return hasMethod("com.huanghuang.rsintegration.mods.jei.JeiStoragePullPacket", "handleOnServer",
+                    "(Lcom/huanghuang/rsintegration/mods/jei/JeiStoragePullPacket;Lnet/minecraft/server/level/ServerPlayer;)V")
+                    && hasMethod("com.huanghuang.rsintegration.mods.jei.JeiStoragePullPacket", "notify",
+                    "(Lnet/minecraft/server/level/ServerPlayer;Ljava/lang/String;[Ljava/lang/Object;)V")
+                    && hasMethod("com.huanghuang.rsintegration.mods.jei.client.JeiCheatShortcuts", "pullFromStorage",
+                    "(Lnet/minecraft/client/gui/screens/Screen;)Z");
+        }
         if (mixinClassName.endsWith(".JeiEmcCheatInputMixin")) {
             return hasClass("mezz.jei.gui.input.handlers.CheatInputHandler");
         }
@@ -76,6 +90,13 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
         return true;
     }
 
+    public static boolean supportsRsiWorldPick() {
+        return hasMethod("com.huanghuang.rsintegration.client.input.WorldPickClient", "onPickBlock",
+                "(Lnet/minecraftforge/client/event/InputEvent$InteractionKeyMappingTriggered;)V")
+                && hasMethod("com.huanghuang.rsintegration.feature.sidepanel.RSSidePanelClickPacket", "handleSingleClick",
+                "(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/item/ItemStack;BZLjava/util/UUID;)Lnet/minecraft/world/item/ItemStack;");
+    }
+
     private static boolean hasClass(String name) {
         String resource = name.replace('.', '/') + ".class";
         ClassLoader loader = ProjectExaMixinConfigPlugin.class.getClassLoader();
@@ -85,6 +106,10 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
     }
 
     private static boolean hasCreateMethod(String targetClassName, String descriptor) {
+        return hasMethod(targetClassName, "create", descriptor);
+    }
+
+    private static boolean hasMethod(String targetClassName, String methodName, String descriptor) {
         String resourceName = targetClassName.replace('.', '/') + ".class";
         ClassLoader[] classLoaders = {
                 ProjectExaMixinConfigPlugin.class.getClassLoader(),
@@ -109,7 +134,7 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
                             String methodDescriptor,
                             String signature,
                             String[] exceptions) {
-                        if (name.equals("create") && methodDescriptor.equals(descriptor)) {
+                        if (name.equals(methodName) && methodDescriptor.equals(descriptor)) {
                             found[0] = true;
                         }
                         return null;

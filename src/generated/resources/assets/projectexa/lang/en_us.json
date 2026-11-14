@@ -547,6 +547,7 @@
 	"text.projectexa.jei_transmute.no_emc": "Transmutation failed: %s has no valid EMC value.",
 	"text.projectexa.jei_transmute.insufficient_emc": "Transmutation failed: insufficient EMC; at least %s EMC is required.",
 	"text.projectexa.jei_transmute.different_item": "Transmutation failed: the destination contains a different item.",
+	"text.projectexa.jei_transmute.pending": "Transmutation failed: the previous retrieval is still pending.",
 	"text.projectexa.jei_transmute.no_space": "Transmutation failed: no space is available at the destination.",
 	"text.projectexa.jei_transmuted": "Transmuted %s %s for %s EMC",
 	"text.projectexa.wip": "WIP!",

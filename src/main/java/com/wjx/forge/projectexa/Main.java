@@ -3,6 +3,7 @@ package com.wjx.forge.projectexa;
 import com.wjx.forge.projectexa.config.Config;
 import com.wjx.forge.projectexa.item.ItemPersonalEmcWarehouse;
 import com.wjx.forge.projectexa.net.PacketHandler;
+import com.wjx.forge.projectexa.net.packets.to_client.PacketJeiEmcConfig;
 import com.wjx.forge.projectexa.registries.*;
 import com.wjx.forge.projectexa.util.*;
 import moze_intel.projecte.integration.IntegrationHelper;
@@ -15,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
@@ -33,6 +35,9 @@ public class Main {
     @SuppressWarnings("unused")
     public static final org.apache.logging.log4j.Logger Logger = LogManager.getLogger();
 
+    private Boolean lastJeiEmcSetting;
+    private Boolean lastWorldEmcPickSetting;
+
     public Main(FMLJavaModLoadingContext context) {
         PacketHandler.register();
         IEventBus bus = context.getModEventBus();
@@ -44,6 +49,7 @@ public class Main {
         MenuTypes.Registry.register(bus);
         CreativeTabs.Registry.register(bus);
         MinecraftForge.EVENT_BUS.addListener(this::serverTick);
+        MinecraftForge.EVENT_BUS.addListener(this::onPlayerLogin);
         context.registerConfig(ModConfig.Type.COMMON, Config.Spec, "project-expansion.toml");
 
         Fuel.registerAll();
@@ -52,8 +58,24 @@ public class Main {
         AdvancedAlchemicalChest.register();
     }
 
+    private void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PacketHandler.sendTo(new PacketJeiEmcConfig(Config.enableJeiEmcRetrieval.get(), Config.enableWorldEmcPick.get()), player);
+        }
+    }
+
     private void serverTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        boolean jeiEmcEnabled = Config.enableJeiEmcRetrieval.get();
+        boolean worldPickEnabled = Config.enableWorldEmcPick.get();
+        if (lastJeiEmcSetting == null || lastJeiEmcSetting != jeiEmcEnabled
+                || lastWorldEmcPickSetting == null || lastWorldEmcPickSetting != worldPickEnabled) {
+            lastJeiEmcSetting = jeiEmcEnabled;
+            lastWorldEmcPickSetting = worldPickEnabled;
+            for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+                PacketHandler.sendTo(new PacketJeiEmcConfig(jeiEmcEnabled, worldPickEnabled), player);
+            }
+        }
         AlchemicalCollectionCollector.process();
         for (ServerPlayer player : ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers()) {
             for (int i = 0; i < player.getInventory().getContainerSize(); i++) {

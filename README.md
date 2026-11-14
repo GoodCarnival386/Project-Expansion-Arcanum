@@ -57,4 +57,6 @@ The original MIT license and Donovan_DMC copyright notice are retained. See [LIC
 
 ### JEI EMC retrieval
 
-In a container screen with JEI cheat mode disabled, use JEI's configured cheat-item bindings to transmute learned items. By default, left or right click retrieves one item and Shift + left click or middle click retrieves a stack. JEI's give mode determines whether items go to the cursor or inventory; its hotbar option also applies. Items must have a positive EMC value, and the amount is limited by the balance and available space.
+With `enableJeiEmcRetrieval` enabled (the default) and while carrying an Arcane Transmutation Tablet, in a container screen with JEI cheat mode disabled, use JEI's configured cheat-item bindings to transmute learned items. By default, left or right click retrieves one item and Shift + left click or middle click retrieves a stack. JEI's give mode determines whether items go to the cursor or inventory; its hotbar option also applies. Items must have a positive EMC value, and the amount is limited by the balance and available space.
+
+World pick-block transmutation is controlled by `enableWorldEmcPick` (enabled by default) and requires carrying an Arcane Transmutation Tablet. Shift + pick block transmutes up to a stack.
