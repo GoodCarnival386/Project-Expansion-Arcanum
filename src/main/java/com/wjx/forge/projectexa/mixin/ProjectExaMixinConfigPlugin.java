@@ -15,7 +15,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 
-/** Selects compatible JEI transfer and RSI storage integration Mixins. */
+/** Selects compatible JEI transfer, RSI layout and RSI storage integration Mixins. */
 public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
     private static final String RECIPE_TRANSFER_BUTTON = "mezz.jei.gui.recipes.RecipeTransferButton";
     private static final String MODERN_MIXIN =
@@ -33,8 +33,9 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
 
     private static final Set<String> LEGACY_RSI_INVENTORY_MIXINS = Set.of(
             "com.wjx.forge.projectexa.mixin.RsiExtractionLedgerAccessor",
-            "com.wjx.forge.projectexa.mixin.RsiExtractionLedgerMixin",
-            "com.wjx.forge.projectexa.mixin.RsiMaterialSourcesMixin");
+            "com.wjx.forge.projectexa.mixin.RsiExtractionLedgerMixin");
+    private static final String RSI_PLAN_SCREEN =
+            "com.huanghuang.rsintegration.crafting.plan.CraftingPlanScreen";
     private static final String BD_SESSION_MIXIN =
             "com.wjx.forge.projectexa.mixin.RsiBeyondDimensionsSessionMixin";
 
@@ -49,6 +50,22 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith(".RsiLegacyPlanLayoutMixin")
+                || mixinClassName.endsWith(".RsiPlanRenderEngineMixin")) {
+            return hasMethod(RSI_PLAN_SCREEN, "layoutContentSections", "(Lnet/minecraft/client/gui/Font;I)V");
+        }
+        if (mixinClassName.endsWith(".RsiWorkspacePlanLayoutMixin")
+                || mixinClassName.endsWith(".RsiMaterialTableMixin")
+                || mixinClassName.endsWith(".RsiMaterialTableRowAccessor")) {
+            return hasMethod(RSI_PLAN_SCREEN, "layoutWorkspace", "()V");
+        }
+        if (mixinClassName.endsWith(".RsiMaterialSourcesMixin")
+                || mixinClassName.endsWith(".RsiTypedMaterialSourcesMixin")) {
+            boolean typedInventory = hasMethod("com.huanghuang.rsintegration.crafting.MaterialSources",
+                    "countInventoryForTypes", "(Lnet/minecraft/world/entity/player/Player;Ljava/util/Set;)Ljava/util/Map;");
+            return RsiStorageCompat.hasLegacyInventory()
+                    && typedInventory == mixinClassName.endsWith(".RsiTypedMaterialSourcesMixin");
+        }
         if (mixinClassName.endsWith(".RsiWorldPickClientMixin")
                 || mixinClassName.endsWith(".RsiWorldPickInvoker")) {
             return supportsRsiWorldPick();

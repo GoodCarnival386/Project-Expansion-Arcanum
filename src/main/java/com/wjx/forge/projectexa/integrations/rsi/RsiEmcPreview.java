@@ -12,4 +12,7 @@ public interface RsiEmcPreview {
     String projectexa$emcTotal();
 
     int projectexa$emcColor();
+
+    /** Refresh version-specific layout or material-width caches after a quote changes. */
+    default void projectexa$invalidateLayout() {}
 }

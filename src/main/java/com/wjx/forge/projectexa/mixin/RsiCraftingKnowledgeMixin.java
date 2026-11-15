@@ -64,9 +64,9 @@ public abstract class RsiCraftingKnowledgeMixin {
         return original.call(broker, source, material, stack);
     }
 
-    // Only this tick overload contains the legacy machine-step output collection.
-    @WrapOperation(method = "tick(Lcom/huanghuang/rsintegration/crafting/VanillaCraftingTickBudget$ChainAllowance;"
-            + "Ljava/util/function/BooleanSupplier;)Z", at = @At(value = "INVOKE",
+    // RSI 1.6.0 moved this body from tick into tickWithMaterials; the outer tick scope still wraps both.
+    @WrapOperation(method = {"tick(Lcom/huanghuang/rsintegration/crafting/VanillaCraftingTickBudget$ChainAllowance;"
+            + "Ljava/util/function/BooleanSupplier;)Z", "tickWithMaterials"}, at = @At(value = "INVOKE",
             target = "Lcom/huanghuang/rsintegration/crafting/AsyncCraftChain$OutputCollection;stacks()Ljava/util/List;"),
             remap = false)
     private List<ItemStack> projectexa$rememberCollectedProducts(@Coerce Object collection,

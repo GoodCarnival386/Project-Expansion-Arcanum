@@ -1,7 +1,16 @@
 # RS Integration：奥术转化桌递归合成补料
 
-适配开发依赖：Minecraft 1.20.1 / Forge 47.3.22 / ProjectE PE1.0.1 /
-RS Integration 1.5.3（Modrinth 版本 ULXlu3YQ）。RSI 仍然是可选依赖。
+开发依赖：Minecraft 1.20.1 / Forge 47.3.22 / ProjectE PE1.0.1。
+RSI 编译依赖为 1.6.0（`rsIntegrationCompileVersion = co4z1Jhs`），用于编译两套界面适配；
+当前开发运行依赖为 1.6.0（`rsIntegrationVersion = co4z1Jhs`）。RSI 仍然是可选依赖。
+编译依赖使用 Modrinth 模块名 `rs-integration`，运行依赖使用同项目的 ID 别名 `vtvveeqA`，
+避免 ForgeGradle 的共用 `__obfuscated` 配置将两个版本合并，导致其中一个映射依赖无法解析。
+
+同时保留 RSI 1.5.3（ULXlu3YQ）兼容。Mixin 插件静态读取目标类结构，分别选择
+1.5.3 的卡片/树状布局与 1.6.0 的工作区布局，不提前加载 RSI 客户端类。
+报价请求、过期响应过滤与定时刷新共用；旧版保留材料区/树状行的报价，
+新版在工作区材料摘要上方预留总报价行，并扩展摘要条目的宽度、在材料表物品名和悬浮提示中显示补料报价。
+材料表列宽和摘要可用空间有限时，完整的单项报价可通过物品悬浮提示查看。
 
 RSI 1.5.2 已修复开发环境中提前读取 Config 的问题，本项目不再保留对应的按键注册和侧栏配置修复 Mixin。
 
@@ -69,6 +78,10 @@ BD 虚拟库存报价使用与会话 Mixin 相同的知识模板、单项可转�
 `RsiMaterialSourcesMixin.countInventory` 在服务端主线程追加虚拟材料快照，兼容未安装
 Sophisticated Backpacks 的情况；安装该模组时过滤重复的虚拟来源，避免双计数。
 该快照同时进入 RSI 同步规划和异步规划的不可变输入，不在异步线程读取玩家能力。
+
+RSI 1.6.0 将扫描实现移到 `countInventoryForTypes`，由 `RsiTypedMaterialSourcesMixin`
+接入并遵守调用方的物品类型过滤；两套扫描 Mixin 互斥启用，避免委托调用时重复追加 EMC。
+合成产物学习同时适配旧版 `tick` 与新版 `tickWithMaterials` 内的机器产物收集点。
 
 `RsiExtractionLedgerMixin.findAllBackpackInventories` 将虚拟材料追加到 RSI 自身的背包列表。
 实际提取沿用 RSI 的 `PLAYER_INVENTORY` 来源、提取记录及取消返料。

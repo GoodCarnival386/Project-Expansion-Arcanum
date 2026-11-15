@@ -32,6 +32,10 @@
 		"RsiJeiMiddleClickMixin",
 		"RsiWorldPickClientMixin",
 		"RsiCraftingPlanScreenMixin",
+		"RsiLegacyPlanLayoutMixin",
+		"RsiWorkspacePlanLayoutMixin",
+		"RsiMaterialTableMixin",
+		"RsiMaterialTableRowAccessor",
 		"RsiPlanRenderEngineMixin",
 		"RsiStripEntryAccessor"
 	],
@@ -51,6 +55,7 @@
 		"RsiExtractionLedgerAccessor",
 		"RsiExtractionLedgerMixin",
 		"RsiMaterialSourcesMixin",
+		"RsiTypedMaterialSourcesMixin",
 		"RsiBeyondDimensionsSessionMixin",
 		"RsiWorldPickInvoker",
 		"RsiJeiStoragePullMixin",

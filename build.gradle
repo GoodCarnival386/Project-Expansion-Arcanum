@@ -121,6 +121,7 @@ repositories {
         url = "https://api.modrinth.com/maven"
         content {
             includeModule "maven.modrinth", "rs-integration"
+            includeModule "maven.modrinth", "vtvveeqA"
         }
     }
     maven {
@@ -170,8 +171,10 @@ dependencies {
     runtimeOnly fg.deobf("dev.architectury:architectury-forge:${getProperty("architecturyVersion")}") { transitive = false }
     compileOnly fg.deobf("curse.maven:refined-storage-243076:${getProperty("refinedStorageVersion")}")
     runtimeOnly fg.deobf("curse.maven:refined-storage-243076:${getProperty("refinedStorageVersion")}")
-    compileOnly fg.deobf("maven.modrinth:rs-integration:${getProperty("rsIntegrationVersion")}")
-    runtimeOnly fg.deobf("maven.modrinth:rs-integration:${getProperty("rsIntegrationVersion")}")
+    compileOnly fg.deobf("maven.modrinth:rs-integration:${getProperty("rsIntegrationCompileVersion")}")
+    // ForgeGradle resolves all deobf originals in one __obfuscated configuration.
+    // Use Modrinth's project-ID alias for runtime so Gradle keeps both API and runtime versions.
+    runtimeOnly fg.deobf("maven.modrinth:vtvveeqA:${getProperty("rsIntegrationVersion")}")
 
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${getProperty("curiosVersion")}:api")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${getProperty("curiosVersion")}")
