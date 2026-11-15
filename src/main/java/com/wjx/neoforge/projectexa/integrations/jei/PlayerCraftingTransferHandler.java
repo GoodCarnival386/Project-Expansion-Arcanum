@@ -11,6 +11,8 @@ import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
 import mezz.jei.api.recipe.transfer.IRecipeTransferInfo;
+import mezz.jei.api.recipe.transfer.IRecipeTransferContext;
+import mezz.jei.common.transfer.RecipeTransferContext;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -28,7 +30,7 @@ import java.util.Optional;
  * Keeps JEI's normal 2x2 player crafting behavior while handing oversized
  * crafting recipes to the arcane transmutation tablet when available.
  */
-public class PlayerCraftingTransferHandler implements IRecipeTransferHandler<InventoryMenu, RecipeHolder<CraftingRecipe>> {
+public class PlayerCraftingTransferHandler extends ArcaneRecipeTransferHandler<InventoryMenu> {
     private static final int[] PLAYER_GRID_SLOTS = {0, 1, 3, 4};
 
     private final IRecipeTransferHandlerHelper transferHelper;
@@ -57,9 +59,22 @@ public class PlayerCraftingTransferHandler implements IRecipeTransferHandler<Inv
     }
 
     @Override
-    public @Nullable IRecipeTransferError transferRecipe(InventoryMenu container, RecipeHolder<CraftingRecipe> recipe,
+    public @Nullable IRecipeTransferError transferRecipe(IRecipeTransferContext<RecipeHolder<CraftingRecipe>, InventoryMenu> context,
+                                                        boolean doTransfer) {
+        List<IRecipeSlotView> inputs = context.getRecipeSlots().getSlotViews(RecipeIngredientRole.INPUT);
+        if (fitsPlayerCrafting(context.getRecipe(), inputs)) {
+            IRecipeSlotsView playerInputs = transferHelper.createRecipeSlotsView(playerGridSlots(inputs));
+            // This JEI context copier is present in both 19.57 and 19.70 and preserves the completion callback.
+            return playerHandler.transferRecipe(RecipeTransferContext.copyWithRecipeSlots(context, playerInputs), doTransfer);
+        }
+        return super.transferRecipe(context, doTransfer);
+    }
+
+    @SuppressWarnings("removal")
+    @Override
+    protected @Nullable IRecipeTransferError transferRecipe(InventoryMenu container, RecipeHolder<CraftingRecipe> recipe,
                                                           IRecipeSlotsView slots, Player player, boolean transferAll,
-                                                          boolean doTransfer) {
+                                                          boolean doTransfer, int transferId) {
         List<IRecipeSlotView> inputs = slots.getSlotViews(RecipeIngredientRole.INPUT);
         if (fitsPlayerCrafting(recipe, inputs)) {
             IRecipeSlotsView playerInputs = transferHelper.createRecipeSlotsView(playerGridSlots(inputs));
@@ -72,7 +87,7 @@ public class PlayerCraftingTransferHandler implements IRecipeTransferHandler<Inv
         }
 
         if (doTransfer) {
-            net.neoforged.neoforge.network.PacketDistributor.sendToServer(new PacketOpenArcaneTransmutationTabletWithRecipe(recipe.id(), transferAll));
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(new PacketOpenArcaneTransmutationTabletWithRecipe(recipe.id(), transferAll, transferId));
         }
         return null;
     }

@@ -44,6 +44,9 @@ public class ClientEvents {
     public static class GameEvents {
         @SubscribeEvent
         public static void clientTickEvent(ClientTickEvent.Pre event) {
+            if (net.neoforged.fml.ModList.get().isLoaded("jei")) {
+                com.wjx.neoforge.projectexa.integrations.jei.JeiTransferCompletion.tick();
+            }
             if (!Keybinds.REGISTERED) return;
 
             boolean openTransmutationTablet = Keybinds.OPEN_TRANSMUTATION_TABLET.consumeClick();

@@ -27,6 +27,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
@@ -34,11 +35,14 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -47,6 +51,30 @@ import java.math.BigInteger;
 import java.util.*;
 
 public class ContainerArcaneTransmutationTablet extends PEHandContainer {
+    public static final int STATION_PANEL_X = -144;
+    public static final int STATION_PANEL_Y = 10;
+    public static final int STATION_PANEL_WIDTH = 140;
+    public static final int STATION_PANEL_HEIGHT = 124;
+    public static final int STONE_RECIPE_X = STATION_PANEL_X + 37;
+    public static final int STONE_RECIPE_Y = STATION_PANEL_Y + 23;
+    public static final int STONE_COLUMNS = 4;
+    public static final int STONE_ROWS = 3;
+    public static final int STONE_CELL = 18;
+
+    public static int stationSlotX(int station, int slot) {
+        if (station == 1) return STATION_PANEL_X + (slot == 3 ? 115 : 11 + slot * 18);
+        if (station == 2) return STATION_PANEL_X + (slot == 0 ? 11 : 115);
+        return STATION_PANEL_X + 11 + slot * 52;
+    }
+
+    public static int stationSlotY(int station, int slot) {
+        return STATION_PANEL_Y + switch (station) {
+            case 1 -> 99;
+            case 2 -> slot == 0 ? 31 : 101;
+            default -> 65;
+        };
+    }
+
     private static final int[] ROTATION_SLOTS = {0, 1, 2, 5, 8, 7, 6, 3};
     private final List<SlotInput> inputSlots = new ArrayList<>();
     private final List<PXOutputSlot> outputSlots = new ArrayList<>();
@@ -55,7 +83,7 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
     private ResultContainer resultSlots;
     private SlotUnlearn unlearn;
     private static final int INPUT = 0;
-    private static final int INPUT_COUNT = 4;
+    private static final int INPUT_COUNT = 8;
     private static final int LOCK = 8;
     private static final int CONSUME = 9;
     private static final int UNLEARN = 10;
@@ -66,6 +94,14 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
     private static final int CRAFTING = 64;
     private static final int RESULT = 63;
     private static final int CRAFTING_COUNT = 9;
+    public static final int SMITHING = 73;
+    private static final int STONECUTTING = 77;
+    private static final int ANVIL = 79;
+    private final SmithingMenu smithing;
+    private final StonecutterMenu stonecutter;
+    private final AnvilMenu anvil;
+    private int station;
+    private boolean craftingPanelVisible = true;
     public int lockX, lockY, consumeX, consumeY, unlearnX, unlearnY;
     private final Player player;
     private final IKnowledgeProvider provider;
@@ -88,7 +124,21 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
         this.player = playerInv.player;
         this.provider = provider;
         this.transmutationInventory = new TransmutationInventory(playerInv.player);
+        this.smithing = new SmithingMenu(windowId, playerInv);
+        this.stonecutter = new StonecutterMenu(windowId, playerInv);
+        this.anvil = new AnvilMenu(windowId, playerInv);
         initSlots();
+        addDataSlot(new DataSlot() {
+            public int get() { return anvil.getCost(); }
+            public void set(int value) { anvil.setMaximumCost(value); }
+        });
+        addDataSlot(new DataSlot() {
+            public int get() { return station; }
+            public void set(int value) {
+                station = value;
+                craftingPanelVisible = value == 0;
+            }
+        });
     }
 
     private void initSlots() {
@@ -123,14 +173,73 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
         this.craftSlots = new TransientCraftingContainer(this, 3, 3);
         this.resultSlots = new ResultContainer();
 
-        addSlot(new PXResultSlot(playerInv.player, this.craftSlots, this.resultSlots, this,0, -23, 75));
-
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                addSlot(new PXCraftingSlot(this.craftSlots, j + i * 3, -59 + j * 18, 17 + i * 18));
+        addSlot(new PXResultSlot(player, craftSlots, resultSlots, this, 0, -23, 75) {
+            @Override
+            public boolean isActive() {
+                return craftingPanelVisible;
+            }
+        });
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 3; column++) {
+                addSlot(new PXCraftingSlot(craftSlots, column + row * 3, -59 + column * 18, 17 + row * 18) {
+                    @Override
+                    public boolean isActive() {
+                        return craftingPanelVisible;
+                    }
+                });
             }
         }
+        for (int i = 0; i < 4; i++) addStationSlot(smithing.getSlot(i), 1, i);
+        for (int i = 0; i < 2; i++) addStationSlot(stonecutter.getSlot(i), 2, i);
+        for (int i = 0; i < 3; i++) addStationSlot(anvil.getSlot(i), 3, i);
+    }
 
+    private void addStationSlot(Slot original, int stationId, int stationSlot) {
+        addSlot(new Slot(original.container, original.getSlotIndex(), stationSlotX(stationId, stationSlot), stationSlotY(stationId, stationSlot)) {
+            @Override public boolean isActive() { return isStation(stationId); }
+            @Override public boolean mayPlace(ItemStack stack) { return original.mayPlace(stack); }
+            @Override public boolean mayPickup(Player player) { return original.mayPickup(player); }
+            @Override public void onTake(Player player, ItemStack stack) { original.onTake(player, stack); }
+            @Override public void onQuickCraft(ItemStack stack, ItemStack originalStack) { original.onQuickCraft(stack, originalStack); }
+        });
+    }
+
+    public void selectStation(int value) {
+        // -1 closes every side panel while preserving its ingredients.
+        if (value < -1 || value > 3 || value >= 0 && !canUseStation(value)) return;
+        station = value;
+        craftingPanelVisible = value == 0;
+    }
+
+    public static Item stationItem(int value) {
+        return switch (value) {
+            case 0 -> Items.CRAFTING_TABLE;
+            case 1 -> Items.SMITHING_TABLE;
+            case 2 -> Items.STONECUTTER;
+            case 3 -> Items.ANVIL;
+            default -> Items.AIR;
+        };
+    }
+
+    public boolean canUseStation(int value) {
+        return value == 0 || value > 0 && value <= 3
+                && provider.hasKnowledge(new ItemStack(stationItem(value)));
+    }
+
+    public boolean isStation(int value) { return station == value && canUseStation(value); }
+    public int getStation() { return station; }
+
+    public StonecutterMenu getStonecutter() { return stonecutter; }
+    public AnvilMenu getAnvil() { return anvil; }
+
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        return isStation(2) && id >= 0 && id < stonecutter.getNumRecipes()
+                && stonecutter.clickMenuButton(player, id);
+    }
+
+    public void setCraftingPanelVisible(boolean visible) {
+        craftingPanelVisible = visible;
     }
 
     @Override
@@ -147,6 +256,15 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
     public void removed(Player player) {
         super.removed(player);
         if (player.level().isClientSide) return;
+
+        for (int index : new int[] {SMITHING, SMITHING + 1, SMITHING + 2, STONECUTTING, ANVIL, ANVIL + 1}) {
+            ItemStack stack = slots.get(index).remove(Integer.MAX_VALUE);
+            if (!player.isAlive() || player instanceof ServerPlayer serverPlayer && serverPlayer.hasDisconnected()) {
+                if (!stack.isEmpty()) player.drop(stack, false);
+            } else {
+                Util.returnToInventory(playerInv, player, stack, true);
+            }
+        }
 
         // The result is only a preview; ingredients are consumed by ResultSlot.onTake.
         resultSlots.clearContent();
@@ -175,6 +293,20 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
 
     @Override
     public ItemStack quickMoveStack(Player player, int slotIndex) {
+        Slot currentStationSlot = tryGetSlot(slotIndex);
+        if (currentStationSlot == null || !currentStationSlot.isActive()) return ItemStack.EMPTY;
+        if (slotIndex >= SMITHING && slotIndex < slots.size()) {
+            if (!currentStationSlot.hasItem() || !currentStationSlot.mayPickup(player)) return ItemStack.EMPTY;
+            ItemStack moving = currentStationSlot.getItem();
+            ItemStack before = moving.copy();
+            if (!moveItemStackTo(moving, PLAYER, PLAYER + PLAYER_COUNT, true)) return ItemStack.EMPTY;
+            currentStationSlot.onQuickCraft(moving, before);
+            if (moving.isEmpty()) currentStationSlot.set(ItemStack.EMPTY);
+            else currentStationSlot.setChanged();
+            if (moving.getCount() == before.getCount()) return ItemStack.EMPTY;
+            currentStationSlot.onTake(player, moving);
+            return before;
+        }
         if (this.tryGetSlot(slotIndex) instanceof PXCraftingSlot slot && slot.hasItem()) {
             ItemStack original = slot.getItem().copy();
             ItemStack remainder = original.copy();
@@ -285,13 +417,14 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
 
     @Override
     public boolean canDragTo(Slot slot) {
-        return !(slot instanceof SlotConsume || slot instanceof SlotUnlearn || slot instanceof SlotInput || slot instanceof SlotLock || slot instanceof SlotOutput);
+        return slot.isActive() && !(slot instanceof SlotConsume || slot instanceof SlotUnlearn || slot instanceof SlotInput || slot instanceof SlotLock || slot instanceof SlotOutput);
     }
 
     @Override
     public void clicked(int slotId, int dragType, ClickType clickType, Player player) {
+        if (slotId >= 0 && slotId < slots.size() && !slots.get(slotId).isActive()) return;
         if (clickType == ClickType.QUICK_MOVE) skipRefill = true;
-        super.clicked(slotId, dragType, clickType, player);;
+        super.clicked(slotId, dragType, clickType, player);
         if (clickType == ClickType.QUICK_MOVE) skipRefill = false;
     }
 
@@ -307,31 +440,48 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
             RegistryAccess registryAccess = level.registryAccess();
             ServerPlayer serverPlayer = (ServerPlayer) player;
             ItemStack stack = ItemStack.EMPTY;
-            Optional<RecipeHolder<CraftingRecipe>> optional = (Objects.requireNonNull(level.getServer())).getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level);
+            Optional<RecipeHolder<CraftingRecipe>> optional = ModList.get().isLoaded("polymorph")
+                    ? com.wjx.neoforge.projectexa.integrations.polymorph.PolymorphIntegration.getRecipe(menu, level, player, input)
+                    : (Objects.requireNonNull(level.getServer())).getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level);
             if (optional.isPresent()) {
                 RecipeHolder<CraftingRecipe> recipe = optional.get();
                 if (result.setRecipeUsed(level, serverPlayer, recipe)) {
                     stack = recipe.value().assemble(input, registryAccess);
                 }
+            } else {
+                result.setRecipeUsed(null);
             }
 
             result.setItem(0, stack);
-            menu.setRemoteSlot(0, stack);
-            serverPlayer.connection.send(new ClientboundContainerSetSlotPacket(menu.containerId, menu.incrementStateId(), 0, stack));
+            menu.setRemoteSlot(RESULT, stack);
+            serverPlayer.connection.send(new ClientboundContainerSetSlotPacket(menu.containerId, menu.incrementStateId(), RESULT, stack));
         }
     }
 
     @Override
     public boolean canTakeItemForPickAll(ItemStack stack, Slot slot) {
-        return slot.container != this.resultSlots && super.canTakeItemForPickAll(stack, slot);
+        return slot.isActive() && slot.index != SMITHING + 3 && slot.index != STONECUTTING + 1
+                && slot.index != ANVIL + 2 && slot.container != resultSlots && super.canTakeItemForPickAll(stack, slot);
     }
 
-    public void onRecipeTransfer(List<List<ItemStack>> recipe, boolean transferAll) {
+    public boolean onRecipeTransfer(ResourceLocation recipeId, List<List<ItemStack>> recipe, boolean transferAll) {
         if (!(player instanceof ServerPlayer) || !stillValid(player) || recipe == null || recipe.size() > 9
-                || recipe.stream().anyMatch(items -> items == null || items.size() > 256)) return;
+                || recipe.stream().anyMatch(items -> items == null || items.size() > 256)) return false;
+        var selected = player.level().getRecipeManager().byKey(recipeId).orElse(null);
+        if (selected == null || !(selected.value() instanceof CraftingRecipe craftingRecipe)
+                || !craftingRecipe.canCraftInDimensions(3, 3)) return false;
+        selectStation(0);
         recipe = recipe.stream().map(items -> (List<ItemStack>) new ArrayList<>(items)).toList();
         clearCrafting(false);
         fillCraftingSlots(recipe, transferAll);
+        // Filling fires intermediate grid changes. Apply the requested selection only once it is complete.
+        boolean matches = craftingRecipe.matches(CraftingInput.of(3, 3, craftSlots.getItems()), player.level());
+        if (ModList.get().isLoaded("polymorph") && matches) {
+            com.wjx.neoforge.projectexa.integrations.polymorph.PolymorphIntegration.selectRecipe(
+                    player, new RecipeHolder<>(selected.id(), craftingRecipe));
+            slotsChanged(craftSlots);
+        }
+        return matches && !resultSlots.getItem(0).isEmpty();
     }
 
     public void fillCraftingSlots(List<List<ItemStack>> recipe, boolean transferAll) {

@@ -38,6 +38,16 @@ public class JeiRecipesGuiMixin {
         }
     }
 
+    // Modern JEI starts a transfer from the parent screen, rather than only its menu.
+    @Inject(method = "getParentContainerScreen", at = @At("HEAD"), cancellable = true, remap = false)
+    private void projectexa$provideTransferScreen(CallbackInfoReturnable<AbstractContainerScreen<?>> callback) {
+        Screen parent = parentScreen != null ? parentScreen : Minecraft.getInstance().screen;
+        if (!(parent instanceof AbstractContainerScreen<?>)) {
+            JeiArcaneTransferScreen context = projectexa$getTransferContext();
+            if (context != null) callback.setReturnValue(context);
+        }
+    }
+
     @Unique
     private @Nullable JeiArcaneTransferScreen projectexa$getTransferContext() {
         Player player = Minecraft.getInstance().player;

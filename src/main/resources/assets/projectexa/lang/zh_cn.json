@@ -732,5 +732,14 @@
   "projectexa.integration.goety.ritual": "诡厄仪式配方",
   "projectexa.integration.goety.totem": "诡厄根之图腾合成",
   "projectexa.integration.goety.seeds": "诡厄基础 EMC 值",
-  "projectexa.integration.goety.pure_blood": "诡厄纯净不洁之血数据"
+  "projectexa.integration.goety.pure_blood": "诡厄纯净不洁之血数据",
+  "text.projectexa.jei_transmute.provider_unavailable": "转化失败：无法读取个人 EMC 与已学习物品。",
+  "text.projectexa.jei_transmute.no_emc": "转化失败：%s 没有有效的 EMC 值。",
+  "text.projectexa.jei_transmute.insufficient_emc": "转化失败：EMC 不足，至少需要 %s EMC。",
+  "text.projectexa.jei_transmute.different_item": "转化失败：目标位置已有其他物品。",
+  "text.projectexa.jei_transmute.pending": "转化失败：上一次取物还在处理中。",
+  "text.projectexa.jei_transmute.no_space": "转化失败：目标位置没有足够空间。",
+  "text.projectexa.jei_transmuted": "已转化 %s 个 %s，消耗 %s EMC",
+  "projectexa.configuration.enableJeiEmcRetrieval": "启用 JEI EMC 取物",
+  "projectexa.configuration.enableWorldEmcPick": "启用生存模式 EMC 取块"
 }

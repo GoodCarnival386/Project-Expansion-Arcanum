@@ -10,7 +10,6 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
-import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import moze_intel.projecte.api.proxy.IEMCProxy;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -26,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class ArcaneCraftingTransferHandler implements IRecipeTransferHandler<ContainerArcaneTransmutationTablet, RecipeHolder<CraftingRecipe>> {
+public class ArcaneCraftingTransferHandler extends ArcaneRecipeTransferHandler<ContainerArcaneTransmutationTablet> {
     public static final int BLUE_SLOT_HIGHLIGHT_COLOR = 1073742079;
     public static final int RED_SLOT_HIGHLIGHT_COLOR = 1727987712;
     public static final int BLUE_PLUS_BUTTON_COLOR = -2142943745;
@@ -48,10 +47,10 @@ public class ArcaneCraftingTransferHandler implements IRecipeTransferHandler<Con
     }
 
     private List<Integer> findMissingSlots(IRecipeSlotsView recipe, ContainerArcaneTransmutationTablet container, Player player) {
-        List<IRecipeSlotView> ingredients = recipe.getSlotViews();
+        List<IRecipeSlotView> ingredients = recipe.getSlotViews(RecipeIngredientRole.INPUT);
         List<Integer> slots = new ArrayList<>();
 
-        for(int i = 1; i < ingredients.size(); ++i) {
+        for (int i = 0; i < ingredients.size(); ++i) {
             ItemStack[] items = (ingredients.get(i)).getItemStacks().toArray(ItemStack[]::new);
             boolean found = false;
             if (ingredients.get(i).isEmpty()) {
@@ -66,28 +65,29 @@ public class ArcaneCraftingTransferHandler implements IRecipeTransferHandler<Con
             }
 
             if (!found) {
-                slots.add(i - 1);
+                slots.add(i);
             }
         }
 
         return slots;
     }
 
-    public @Nullable IRecipeTransferError transferRecipe(ContainerArcaneTransmutationTablet container, RecipeHolder<CraftingRecipe> recipe, IRecipeSlotsView iRecipeSlotsView, Player player, boolean transferAll, boolean doTransfer) {
+    @Override
+    protected @Nullable IRecipeTransferError transferRecipe(ContainerArcaneTransmutationTablet container, RecipeHolder<CraftingRecipe> recipe, IRecipeSlotsView iRecipeSlotsView, Player player, boolean transferAll, boolean doTransfer, int transferId) {
         if (doTransfer) {
             List<List<ItemStack>> itemStack = new ArrayList<>();
             List<ItemStack> emptyStack = new ArrayList<>();
             emptyStack.add(ItemStack.EMPTY);
 
-            for(int i = 1; i < iRecipeSlotsView.getSlotViews().size(); ++i) {
-                if (iRecipeSlotsView.getSlotViews().get(i).getItemStacks().toList().isEmpty()) {
+            for (IRecipeSlotView input : iRecipeSlotsView.getSlotViews(RecipeIngredientRole.INPUT)) {
+                if (input.getItemStacks().toList().isEmpty()) {
                     itemStack.add(emptyStack);
                 } else {
-                    itemStack.add(iRecipeSlotsView.getSlotViews().get(i).getItemStacks().toList());
+                    itemStack.add(input.getItemStacks().toList());
                 }
             }
 
-            PacketDistributor.sendToServer(new PacketArcaneTransmutationTabletRecipeTransfer(itemStack, transferAll));
+            PacketDistributor.sendToServer(new PacketArcaneTransmutationTabletRecipeTransfer(recipe.id(), itemStack, transferAll, transferId));
             return null;
         } else {
             List<Integer> missing = this.findMissingSlots(iRecipeSlotsView, container, player);
@@ -116,9 +116,10 @@ public class ArcaneCraftingTransferHandler implements IRecipeTransferHandler<Con
             poseStack.pushPose();
             poseStack.translate((float)recipeX, (float)recipeY, 0.0F);
 
-            for(int i = 0; i < this.iRecipeSlotsView.getSlotViews().size(); ++i) {
+            List<IRecipeSlotView> inputs = this.iRecipeSlotsView.getSlotViews(RecipeIngredientRole.INPUT);
+            for (int i = 0; i < inputs.size(); ++i) {
                 if (this.missing.contains(i)) {
-                    this.iRecipeSlotsView.getSlotViews(RecipeIngredientRole.INPUT).get(i).drawHighlight(guiGraphics, RED_SLOT_HIGHLIGHT_COLOR);
+                    inputs.get(i).drawHighlight(guiGraphics, RED_SLOT_HIGHLIGHT_COLOR);
                 }
             }
 

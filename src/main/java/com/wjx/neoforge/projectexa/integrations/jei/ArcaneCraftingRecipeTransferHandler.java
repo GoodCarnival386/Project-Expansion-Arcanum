@@ -8,7 +8,6 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
-import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -27,7 +26,7 @@ import java.util.Optional;
  * crafting grid, routing the recipe to the player's arcane tablet.
  */
 public final class ArcaneCraftingRecipeTransferHandler<C extends AbstractContainerMenu>
-        implements IRecipeTransferHandler<C, RecipeHolder<CraftingRecipe>> {
+        extends ArcaneRecipeTransferHandler<C> {
     private static final IRecipeTransferError HIDDEN = new IRecipeTransferError() {
         @Override
         public Type getType() {
@@ -76,9 +75,9 @@ public final class ArcaneCraftingRecipeTransferHandler<C extends AbstractContain
     }
 
     @Override
-    public @Nullable IRecipeTransferError transferRecipe(C container, RecipeHolder<CraftingRecipe> recipe,
+    protected @Nullable IRecipeTransferError transferRecipe(C container, RecipeHolder<CraftingRecipe> recipe,
                                                           IRecipeSlotsView slots, Player player, boolean transferAll,
-                                                          boolean doTransfer) {
+                                                          boolean doTransfer, int transferId) {
         if (!ArcaneTabletAccess.hasTablet(player)) {
             return HIDDEN;
         }
@@ -88,7 +87,7 @@ public final class ArcaneCraftingRecipeTransferHandler<C extends AbstractContain
         }
 
         List<IRecipeSlotView> inputs = slots.getSlotViews(RecipeIngredientRole.INPUT);
-        net.neoforged.neoforge.network.PacketDistributor.sendToServer(new PacketOpenArcaneTransmutationTabletWithRecipe(recipe.id(), transferAll));
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(new PacketOpenArcaneTransmutationTabletWithRecipe(recipe.id(), transferAll, transferId));
         return null;
     }
 

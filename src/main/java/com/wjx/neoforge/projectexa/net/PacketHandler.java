@@ -15,12 +15,19 @@ public final class PacketHandler {
 
     public PacketHandler(IEventBus modEventBus, ArtifactVersion version) {
         modEventBus.addListener(RegisterPayloadHandlersEvent.class, event -> {
-            PayloadRegistrar registrar = event.registrar(version.toString());
+            // Station slots, input actions, and EMC retrieval require the same protocol on both sides.
+            PayloadRegistrar registrar = event.registrar(version + "-arcane-features-3");
             register(registrar);
         });
     }
 
     public void register(PayloadRegistrar registrar) {
+        registrar.playToServer(PacketArcaneAnvilName.TYPE, PacketArcaneAnvilName.STREAM_CODEC, IPacket::handle);
+        registrar.playToServer(PacketJeiTransmute.TYPE, PacketJeiTransmute.STREAM_CODEC, IPacket::handle);
+        registrar.playToServer(PacketJeiCreativeCursorAck.TYPE, PacketJeiCreativeCursorAck.STREAM_CODEC, IPacket::handle);
+        registrar.playToServer(PacketWorldEmcPick.TYPE, PacketWorldEmcPick.STREAM_CODEC, IPacket::handle);
+        registrar.playToClient(PacketJeiCreativeCursor.TYPE, PacketJeiCreativeCursor.STREAM_CODEC, IPacket::handle);
+        registrar.playToClient(PacketJeiEmcConfig.TYPE, PacketJeiEmcConfig.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketRecipeMaterialTransmutation.TYPE, PacketRecipeMaterialTransmutation.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketStoneTableAction.TYPE, PacketStoneTableAction.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketOpenArcaneTransmutationTabletWithRecipe.TYPE, PacketOpenArcaneTransmutationTabletWithRecipe.STREAM_CODEC, IPacket::handle);
@@ -32,6 +39,7 @@ public final class PacketHandler {
         registrar.playToServer(PacketTeleportBack.TYPE, PacketTeleportBack.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketTeleportToLocation.TYPE, PacketTeleportToLocation.STREAM_CODEC, IPacket::handle);
         registrar.playToClient(ClearKnowledgePacket.TYPE, ClearKnowledgePacket.STREAM_CODEC, IPacket::handle);
+        registrar.playToClient(PacketArcaneRecipeTransferResult.TYPE, PacketArcaneRecipeTransferResult.STREAM_CODEC, IPacket::handle);
         registrar.playToClient(PacketOpenAlchemicalBookGUI.TYPE, PacketOpenAlchemicalBookGUI.STREAM_CODEC, IPacket::handle);
         registrar.playToClient(PacketSyncAlchemicalBookLocations.TYPE, PacketSyncAlchemicalBookLocations.STREAM_CODEC, IPacket::handle);
         registrar.playToClient(PacketUpdateCondenserLock.TYPE, PacketUpdateCondenserLock.STREAM_CODEC, IPacket::handle);

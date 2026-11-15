@@ -60,6 +60,10 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
@@ -165,7 +169,11 @@ dependencies {
     runtimeOnly("curse.maven:no-chat-reports-634062:${ncr_version}")
     compileOnly("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
+    // JEI's context copier preserves native 2x2 acknowledgements; shared config/input APIs drive EMC retrieval.
+    compileOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
     runtimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
+    compileOnly("maven.modrinth:polymorph:${polymorph_version}") { transitive = false }
+    runtimeOnly("maven.modrinth:polymorph:${polymorph_version}") { transitive = false }
     compileOnly "dev.emi:emi-neoforge:${emi_version}:api"
     //runtimeOnly("dev.emi:emi-neoforge:${emi_version}")
     // runtimeOnly("curse.maven:pipez-443900:${pipez_version}")

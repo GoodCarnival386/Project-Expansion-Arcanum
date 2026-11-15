@@ -665,5 +665,17 @@
 	"projectexa.integration.goety.ritual": "Goety ritual recipes",
 	"projectexa.integration.goety.totem": "Goety Totem of Roots crafting",
 	"projectexa.integration.goety.seeds": "Goety base EMC values",
-	"projectexa.integration.goety.pure_blood": "Goety pure unholy blood identity"
+	"projectexa.integration.goety.pure_blood": "Goety pure unholy blood identity",
+  "text.projectexa.jei_transmute.provider_unavailable": "Transmutation failed: personal EMC and knowledge are unavailable.",
+  "text.projectexa.jei_transmute.no_emc": "Transmutation failed: %s has no valid EMC value.",
+  "text.projectexa.jei_transmute.insufficient_emc": "Transmutation failed: insufficient EMC; at least %s EMC is required.",
+  "text.projectexa.jei_transmute.different_item": "Transmutation failed: the destination contains a different item.",
+  "text.projectexa.jei_transmute.pending": "Transmutation failed: the previous retrieval is still pending.",
+  "text.projectexa.jei_transmute.no_space": "Transmutation failed: no space is available at the destination.",
+  "text.projectexa.jei_transmuted": "Transmuted %s %s for %s EMC",
+  "projectexa.configuration.enableJeiEmcRetrieval": "Enable JEI EMC Retrieval",
+  "projectexa.configuration.enableWorldEmcPick": "Enable Survival EMC Pick Block",
+  "gui.projectexa.arcane_transmutation_tablet.clockwise": "Clockwise",
+  "gui.projectexa.arcane_transmutation_tablet.counter_clockwise": "Counter Clockwise",
+  "gui.projectexa.arcane_transmutation_tablet.clear_force": "Force Return"
 }

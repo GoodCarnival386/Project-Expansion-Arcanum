@@ -5,6 +5,7 @@ import com.wjx.neoforge.projectexa.config.Config;
 import com.wjx.neoforge.projectexa.net.packets.to_client.PacketOpenAlchemicalBookGUI;
 import com.wjx.neoforge.projectexa.registries.DataComponentTypes;
 import com.wjx.neoforge.projectexa.util.Lang;
+import com.wjx.neoforge.projectexa.util.LegacyAlchemicalBookMigration;
 import com.wjx.neoforge.projectexa.util.Util;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
@@ -78,6 +79,7 @@ public class ItemAlchemicalBook extends Item {
         public static final StreamCodec<FriendlyByteBuf, Mode> STREAM_CODEC = NeoForgeStreamCodecs.enumCodec(Mode.class);
     }
     public Mode getMode(ItemStack stack) {
+        LegacyAlchemicalBookMigration.migrateBook(stack);
         return stack.has(DataComponentTypes.OWNER) ? Mode.PLAYER : Mode.STACK;
     }
 
@@ -142,6 +144,7 @@ public class ItemAlchemicalBook extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if(!level.isClientSide) {
+            LegacyAlchemicalBookMigration.migrateBook(stack);
             if(player.isCrouching() && getTier().canBindToPlayer()) {
                 DataComponentTypes.OwnerData data = stack.get(DataComponentTypes.OWNER);
                 if (getMode(stack) == Mode.PLAYER && data != null) {
@@ -187,6 +190,6 @@ public class ItemAlchemicalBook extends Item {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return stack.has(DataComponentTypes.OWNER);
+        return getMode(stack) == Mode.PLAYER;
     }
 }

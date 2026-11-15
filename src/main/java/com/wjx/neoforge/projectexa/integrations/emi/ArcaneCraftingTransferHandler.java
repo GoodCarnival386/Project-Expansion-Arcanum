@@ -72,6 +72,8 @@ public class ArcaneCraftingTransferHandler implements StandardRecipeHandler<Cont
 
     @Override
     public boolean craft(EmiRecipe recipe, EmiCraftContext<ContainerArcaneTransmutationTablet> context) {
+        var backingRecipe = recipe.getBackingRecipe();
+        if (backingRecipe == null || !(backingRecipe.value() instanceof CraftingRecipe)) return false;
         List<List<ItemStack>> itemStacks = new ArrayList<>();
         List<ItemStack> emptyStack = List.of(ItemStack.EMPTY);
 
@@ -84,7 +86,7 @@ public class ArcaneCraftingTransferHandler implements StandardRecipeHandler<Cont
         }
 
         boolean transferAll = context.getDestination() == EmiCraftContext.Destination.INVENTORY;
-        PacketDistributor.sendToServer(new PacketArcaneTransmutationTabletRecipeTransfer(itemStacks, transferAll));
+        PacketDistributor.sendToServer(new PacketArcaneTransmutationTabletRecipeTransfer(backingRecipe.id(), itemStacks, transferAll));
         return true;
     }
 }

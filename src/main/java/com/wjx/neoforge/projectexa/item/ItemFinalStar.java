@@ -75,8 +75,8 @@ public class ItemFinalStar extends ItemPE implements IItemEmcHolder, IPedestalIt
 
     /**
      * Attempts to insert a copied dropped item into the first adjacent inventory
-     * handler. The ProjectEX 1.12 implementation intentionally does not consume
-     * the dropped item and produces a full stack on each update.
+     * handler that accepts it. The ProjectEX 1.12 implementation intentionally does
+     * not consume the dropped item and produces a full stack on each update.
      */
     @Override
     public <PEDESTAL extends BlockEntity & IDMPedestal> boolean updateInPedestal(
@@ -121,8 +121,13 @@ public class ItemFinalStar extends ItemPE implements IItemEmcHolder, IPedestalIt
 
             // Match the original behavior: the source entity remains in place,
             // while the handler receives as much of a full stack as it accepts.
-            ItemHandlerHelper.insertItem(handler, copied, false);
-            return false;
+            int offered = copied.getCount();
+            ItemStack remainder = ItemHandlerHelper.insertItem(handler, copied, false);
+            // Continue after a full rejection, but stop after any actual insertion
+            // so partial acceptance cannot produce another full stack this update.
+            if (remainder.getCount() < offered) {
+                return false;
+            }
         }
         return false;
     }

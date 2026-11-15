@@ -1,7 +1,9 @@
 package com.wjx.neoforge.projectexa.integrations.jei;
 
 import com.wjx.neoforge.projectexa.Main;
+import com.wjx.neoforge.projectexa.gui.GUIArcaneTransmutationTablet;
 import com.wjx.neoforge.projectexa.gui.GUIStoneTable;
+import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import net.minecraft.world.inventory.*;
 import com.wjx.neoforge.projectexa.util.SearchSync;
@@ -10,6 +12,9 @@ import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.Rect2i;
+
+import java.util.List;
 
 @mezz.jei.api.JeiPlugin
 public class JeiPlugin implements IModPlugin {
@@ -39,11 +44,18 @@ public class JeiPlugin implements IModPlugin {
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
         registration.addGuiContainerHandler(GUIStoneTable.class, new StoneTableJeiHandler());
+        registration.addGuiContainerHandler(GUIArcaneTransmutationTablet.class, new IGuiContainerHandler<GUIArcaneTransmutationTablet>() {
+            @Override
+            public List<Rect2i> getGuiExtraAreas(GUIArcaneTransmutationTablet screen) {
+                return screen.getStationExtraAreas();
+            }
+        });
     }
 
     @Override
     public void onRuntimeAvailable(IJeiRuntime jeiRuntime) {
         RUNTIME = jeiRuntime;
+        JeiEmcInput.register();
         SearchSync.register(new SearchSync("jei", text -> {
             if (RUNTIME != null) RUNTIME.getIngredientFilter().setFilterText(text);
         }));
@@ -51,6 +63,8 @@ public class JeiPlugin implements IModPlugin {
 
     @Override
     public void onRuntimeUnavailable() {
+        JeiEmcInput.clearMouseInput();
+        JeiTransferCompletion.clear();
         RUNTIME = null;
     }
 }

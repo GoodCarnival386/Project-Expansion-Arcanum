@@ -9,6 +9,7 @@ import com.wjx.neoforge.projectexa.registries.AttachmentTypes;
 import com.wjx.neoforge.projectexa.registries.Capabilities;
 import com.wjx.neoforge.projectexa.registries.DataComponentTypes;
 import com.wjx.neoforge.projectexa.util.Lang;
+import com.wjx.neoforge.projectexa.util.LegacyAlchemicalBookMigration;
 import com.wjx.neoforge.projectexa.util.TagNames;
 import com.wjx.neoforge.projectexa.util.Util;
 import net.minecraft.ChatFormatting;
@@ -328,8 +329,10 @@ public record CapabilityAlchemicalBookLocations(ItemAlchemicalBook.Mode mode, @N
 
     private AlchemicalBookLocationData getData() {
         if (player != null) {
+            LegacyAlchemicalBookMigration.migratePlayer(player);
             return player.getData(AttachmentTypes.ALCHEMICAL_BOOK_LOCATIONS);
         } else if (itemStack != null) {
+            LegacyAlchemicalBookMigration.migrateBook(itemStack);
             return itemStack.getOrDefault(DataComponentTypes.ALCHEMICAL_BOOK_LOCATIONS, new AlchemicalBookLocationData());
         } else {
             throw new NullPointerException("Both Player and ItemStack are null");
