@@ -1,7 +1,7 @@
 import { exists, genericBlockMatter } from "../../util";
 import { copyFile, mkdir } from "node:fs/promises";
 
-const BASE = new URL("power_flower.json", import.meta.url).pathname;
+const BASE = new URL("power_flower.json", import.meta.url);
 export default async function run(outDir: URL) {
     if (!await exists(new URL("power_flower/", outDir))) {
         await mkdir(new URL("power_flower/", outDir), { recursive: true });

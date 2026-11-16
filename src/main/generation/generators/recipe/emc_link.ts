@@ -2,7 +2,7 @@ import { exists } from "../../util";
 import { MATTER_TIERS } from "../../constants";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 
-const BASE = new URL("emc_link.json", import.meta.url).pathname;
+const BASE = new URL("emc_link.json", import.meta.url);
 export default async function run(outDir: URL) {
     if (!await exists(new URL("emc_link/", outDir))) {
         await mkdir(new URL("emc_link/", outDir), { recursive: true });
@@ -10,7 +10,7 @@ export default async function run(outDir: URL) {
     const base = (await readFile(BASE)).toString();
     return (await Promise.all(MATTER_TIERS.map(async(tier, index, arr) => {
         await writeFile(new URL(`emc_link/${tier}.json`, outDir), base.replace(/\$TARGET\$/g, getMatter(tier)).replace(/\$CORE\$/g, getCore(tier)).replace(/\$TIER\$/g, tier).replace(/\$PREV\$/g, arr[index - 1]));
-        return [BASE, new URL(`emc_link/${tier}.json`, outDir).pathname];
+        return [BASE.pathname, new URL(`emc_link/${tier}.json`, outDir).pathname];
     }))).filter(Boolean);
 }
 

@@ -1,5 +1,5 @@
 import { FUEL_DISABLED } from "../../constants";
 import { genericMatter } from "../../util";
 
-const BASE = new URL("fuel.json", import.meta.url).pathname;
+const BASE = new URL("fuel.json", import.meta.url);
 export default genericMatter.bind(null, "fuel", BASE, FUEL_DISABLED);

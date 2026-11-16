@@ -1,4 +1,4 @@
 import {genericBlockColor} from "../../util";
 
-const BASE = new URL("advanced_alchemical_chest.json", import.meta.url).pathname;
+const BASE = new URL("advanced_alchemical_chest.json", import.meta.url);
 export default genericBlockColor.bind(null, "advanced_alchemical_chest", BASE, [], undefined);

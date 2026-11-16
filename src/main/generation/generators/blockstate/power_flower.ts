@@ -1,4 +1,4 @@
 import { genericMatter } from "../../util";
 
-const BASE = new URL("power_flower.json", import.meta.url).pathname;
+const BASE = new URL("power_flower.json", import.meta.url);
 export default genericMatter.bind(null, "power_flower", BASE, []);
