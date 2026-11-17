@@ -1,8 +1,8 @@
 # RS Integration：奥术转化桌递归合成补料
 
 开发依赖：Minecraft 1.20.1 / Forge 47.3.22 / ProjectE PE1.0.1。
-RSI 编译依赖为 1.6.0（`rsIntegrationCompileVersion = co4z1Jhs`），用于编译两套界面适配；
-当前开发运行依赖为 1.6.0（`rsIntegrationVersion = co4z1Jhs`）。RSI 仍然是可选依赖。
+RSI 编译依赖为 1.6.0.1（`rsIntegrationCompileVersion = T9JE1WcG`），用于编译两套界面适配；
+当前开发运行依赖为 1.6.0.1（`rsIntegrationVersion = T9JE1WcG`）。RSI 仍然是可选依赖。
 编译依赖使用 Modrinth 模块名 `rs-integration`，运行依赖使用同项目的 ID 别名 `vtvveeqA`，
 避免 ForgeGradle 的共用 `__obfuscated` 配置将两个版本合并，导致其中一个映射依赖无法解析。
 
@@ -82,6 +82,12 @@ Sophisticated Backpacks 的情况；安装该模组时过滤重复的虚拟来�
 RSI 1.6.0 将扫描实现移到 `countInventoryForTypes`，由 `RsiTypedMaterialSourcesMixin`
 接入并遵守调用方的物品类型过滤；两套扫描 Mixin 互斥启用，避免委托调用时重复追加 EMC。
 合成产物学习同时适配旧版 `tick` 与新版 `tickWithMaterials` 内的机器产物收集点。
+
+RSI 1.6.0.1 将账本的背包扫描改为 `selectedBackpackInventories`。EMC 预留计算分别接入
+1.6.0 的直接扫描与 1.6.0.1 的来源筛选调用，两处注入组成至少命中一处的必需组，
+避免旧注入点消失导致递归合成时加载账本失败，也避免兼容处理静默丢失共享 EMC 预算约束。
+新版先执行 RSI 的来源筛选，只对筛选结果中已有的虚拟库存重新计算预留预算；
+实际提取仍使用原有未扣预留的虚拟库存视图，避免提交时重复扣减其他材料的预留预算。
 
 `RsiExtractionLedgerMixin.findAllBackpackInventories` 将虚拟材料追加到 RSI 自身的背包列表。
 实际提取沿用 RSI 的 `PLAYER_INVENTORY` 来源、提取记录及取消返料。

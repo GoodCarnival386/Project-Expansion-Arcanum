@@ -95,6 +95,14 @@ mixin {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+tasks.named('processResources').configure {
+    def modMetadataVersion = project.version.toString()
+    inputs.property 'mod_version', modMetadataVersion
+    filesMatching('META-INF/mods.toml') {
+        expand(mod_version: modMetadataVersion)
+    }
+}
+
 repositories {
     mavenCentral {
         content { includeGroup "io.github.llamalad7" }

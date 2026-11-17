@@ -551,6 +551,7 @@
 	"text.projectexa.jei_transmute.no_space": "Transmutation failed: no space is available at the destination.",
 	"text.projectexa.jei_transmuted": "Transmuted %s %s for %s EMC",
 	"text.projectexa.wip": "WIP!",
+	"text.projectexa.update_available": "[Project Expansion: Arcanum] A new version is available: %s",
 	"text.projectexa.provider_error": "Failed to fetch ProjectE provider.",
 	"text.projectexa.cost": "Cost: %s",
 	"text.projectexa.not_owner": "You do not own this, %s does.",

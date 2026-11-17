@@ -2,6 +2,8 @@ package com.wjx.forge.projectexa.mixin;
 
 import com.huanghuang.rsintegration.crafting.CraftingResolver;
 import com.huanghuang.rsintegration.crafting.endpoint.CraftStorageEndpoint;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.wjx.forge.projectexa.integrations.rsi.ArcaneCraftingInventory;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutationTablet;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +15,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
+import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -43,11 +47,33 @@ public abstract class RsiExtractionLedgerMixin {
         cir.setReturnValue(ArcaneCraftingInventory.append(player, cir.getReturnValue(), Map.of()));
     }
 
+    // RSI <= 1.6.0 scans backpacks directly; 1.6.0.1 routes these calls through a selector.
+    // Keep either hook mandatory as a group so a future API change cannot silently drop budgeting.
+    @Group(name = "projectexa$pendingEmcBudget", min = 1)
     @Redirect(method = {"findAvailableInInventory", "countExactAvailableInInventory",
             "countExactAvailableInInventoryLong"},
-            at = @At(value = "INVOKE", target = "Lcom/huanghuang/rsintegration/crafting/ExtractionLedger;findAllBackpackInventories(Lnet/minecraft/server/level/ServerPlayer;)Ljava/util/List;"))
+            at = @At(value = "INVOKE", target = "Lcom/huanghuang/rsintegration/crafting/ExtractionLedger;findAllBackpackInventories(Lnet/minecraft/server/level/ServerPlayer;)Ljava/util/List;"),
+            require = 0, expect = 0)
     private List<IItemHandler> projectexa$budgetPendingEmc(ServerPlayer player) {
         return ArcaneCraftingInventory.append(player, findAllBackpackInventories(player), pendingInv);
+    }
+
+    @Group(name = "projectexa$pendingEmcBudget", min = 1)
+    @WrapOperation(method = {"findAvailableInInventory", "countExactAvailableInInventory",
+            "countExactAvailableInInventoryLong"},
+            at = @At(value = "INVOKE", target = "Lcom/huanghuang/rsintegration/crafting/ExtractionLedger;selectedBackpackInventories(Lnet/minecraft/server/level/ServerPlayer;)Ljava/util/List;"),
+            require = 0, expect = 0, remap = false)
+    private List<IItemHandler> projectexa$budgetSelectedPendingEmc(@Coerce Object ledger, ServerPlayer player,
+            Operation<List<IItemHandler>> original) {
+        List<IItemHandler> sources = original.call(ledger, player);
+        // Honor RSI's source selection: an excluded backpack source must stay excluded.
+        // Rebudget only reservation scans, leaving actual extraction to the normal unreserved view.
+        for (IItemHandler source : sources) {
+            if (source instanceof ArcaneCraftingInventory) {
+                return ArcaneCraftingInventory.append(player, sources, pendingInv);
+            }
+        }
+        return sources;
     }
 
     @ModifyVariable(method = "reserveExactAcrossNetworkAndInventory", at = @At("HEAD"),

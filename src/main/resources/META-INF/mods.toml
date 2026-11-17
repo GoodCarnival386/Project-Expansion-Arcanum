@@ -3,7 +3,7 @@ loaderVersion="[47,)"
 license="MIT"
 [[mods]]
 modId="projectexa"
-version="${file.jarVersion}"
+version="${mod_version}"
 displayName="Project Expansion: Arcanum"
 updateJSONURL="https://raw.githubusercontent.com/WJXhhh/Project-Expansion-Arcanum/1.20.1/updates.json"
 displayURL="https://github.com/WJXhhh/Project-Expansion-Arcanum"

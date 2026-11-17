@@ -545,6 +545,7 @@
   "enchantment.projectexa.alchemical_collection": "炼金收集",
   "enchantment.projectexa.alchemical_collection.desc": "将任何具有EMC值且可开采的方块直接转化为EMC。",
   "text.projectexa.wip": "正在开发中",
+  "text.projectexa.update_available": "[Project Expansion: Arcanum] 发现新版本：%s",
   "text.projectexa.provider_error": "获取ProjectE提供者失败。",
   "text.projectexa.cost": "消耗费用：%s",
   "text.projectexa.not_owner": "该方块不属于你，所有者：%s。",
