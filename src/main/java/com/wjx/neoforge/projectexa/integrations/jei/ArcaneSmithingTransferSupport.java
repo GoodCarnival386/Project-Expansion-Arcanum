@@ -8,12 +8,14 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import moze_intel.projecte.api.capabilities.IKnowledgeProvider;
+import moze_intel.projecte.api.capabilities.PECapabilities;
 import moze_intel.projecte.api.proxy.IEMCProxy;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.SmithingRecipe;
 
@@ -31,16 +33,15 @@ public final class ArcaneSmithingTransferSupport {
     private ArcaneSmithingTransferSupport() {
     }
 
-    public static Status check(IRecipeSlotsView slots, ContainerArcaneTransmutationTablet container, SmithingRecipe recipe) {
-        Player player = container.getPlayer();
+    public static Status check(IRecipeSlotsView slots, Player player, AbstractContainerMenu container, SmithingRecipe recipe) {
         List<Predicate<ItemStack>> ingredients = List.of(
                 recipe::isTemplateIngredient, recipe::isBaseIngredient, recipe::isAdditionIngredient);
         List<IRecipeSlotView> inputs = slots.getSlotViews(RecipeIngredientRole.INPUT);
         List<List<ItemStack>> options = new ArrayList<>(3);
         int emptyMask = 0;
         int size = Math.min(inputs.size(), 3);
-        IKnowledgeProvider provider = container.getProvider();
-        BigInteger budget = container.transmutationInventory.getAvailableEmc();
+        IKnowledgeProvider provider = Util.getKnowledgeProvider(player);
+        BigInteger budget = provider == null ? BigInteger.ZERO : availableEmc(provider);
         BigInteger[] costs = new BigInteger[size];
         ItemStack[] transmuted = new ItemStack[size];
         for (int index = 0; index < size; index++) {
@@ -65,8 +66,10 @@ public final class ArcaneSmithingTransferSupport {
             inventory.add(player.getInventory().getItem(index));
         }
         // Existing smithing inputs are returned to the inventory before filling the recipe.
-        for (int index = 0; index < 3; index++) {
-            inventory.add(container.getSlot(ContainerArcaneTransmutationTablet.SMITHING + index).getItem());
+        if (container instanceof ContainerArcaneTransmutationTablet) {
+            for (int index = 0; index < 3; index++) {
+                inventory.add(container.getSlot(ContainerArcaneTransmutationTablet.SMITHING + index).getItem());
+            }
         }
 
         // At most three inputs: subset matching avoids both double-counting a stack and
@@ -142,6 +145,19 @@ public final class ArcaneSmithingTransferSupport {
             plannedRecipe.add(List.of(selected == null ? ItemStack.EMPTY : selected));
         }
         return new Status(missing, choices, plannedRecipe);
+    }
+
+    private static BigInteger availableEmc(IKnowledgeProvider provider) {
+        BigInteger available = provider.getEmc();
+        var inputLocks = provider.getInputAndLocks();
+        for (int index = 0; index < inputLocks.getSlots(); index++) {
+            if (index == 8) continue; // The lock is a template, not usable stored EMC.
+            ItemStack stack = inputLocks.getStackInSlot(index);
+            if (stack.isEmpty()) continue;
+            var holder = stack.getCapability(PECapabilities.EMC_HOLDER_ITEM_CAPABILITY);
+            if (holder != null) available = available.add(BigInteger.valueOf(Math.max(0, holder.getStoredEmc(stack))));
+        }
+        return available;
     }
 
     public record Status(List<Integer> missing, List<List<ItemStack>> recipe,

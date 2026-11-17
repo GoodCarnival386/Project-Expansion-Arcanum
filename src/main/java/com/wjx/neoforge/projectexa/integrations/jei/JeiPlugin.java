@@ -27,7 +27,6 @@ public class JeiPlugin implements IModPlugin {
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
         registration.addRecipeTransferHandler(new ArcaneCraftingTransferHandler(), RecipeTypes.CRAFTING);
-        registration.addRecipeTransferHandler(new ArcaneSmithingTransferHandler(), RecipeTypes.SMITHING);
         registration.addRecipeTransferHandler(new PlayerCraftingTransferHandler(registration.getTransferHelper()), RecipeTypes.CRAFTING);
         registerCraftingHandler(registration, FurnaceMenu.class, MenuType.FURNACE);
         registerCraftingHandler(registration, BlastFurnaceMenu.class, MenuType.BLAST_FURNACE);

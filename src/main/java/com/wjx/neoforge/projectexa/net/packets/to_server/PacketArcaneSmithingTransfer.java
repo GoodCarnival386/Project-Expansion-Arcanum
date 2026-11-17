@@ -4,6 +4,8 @@ import com.wjx.neoforge.projectexa.Main;
 import com.wjx.neoforge.projectexa.gui.container.ContainerArcaneTransmutationTablet;
 import com.wjx.neoforge.projectexa.net.packets.IPacket;
 import com.wjx.neoforge.projectexa.net.packets.to_client.PacketArcaneRecipeTransferResult;
+import com.wjx.neoforge.projectexa.util.ArcaneTabletAccess;
+import com.wjx.neoforge.projectexa.util.Util;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -11,6 +13,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.SmithingRecipe;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -38,12 +41,17 @@ public record PacketArcaneSmithingTransfer(int containerId, ResourceLocation rec
     }
 
     private boolean transfer(ServerPlayer player) {
-        if (!(player.containerMenu instanceof ContainerArcaneTransmutationTablet menu)
-                || menu.containerId != containerId || menu.getPlayer() != player
-                || !menu.stillValid(player) || !menu.canUseStation(1) || choices.size() != 3) return false;
+        if (player.containerMenu.containerId != containerId || !ArcaneTabletAccess.hasTablet(player)
+                || choices.size() != 3) return false;
+        var provider = Util.getKnowledgeProvider(player);
+        if (provider == null || !provider.hasKnowledge(new ItemStack(Items.SMITHING_TABLE))) return false;
         var holder = player.server.getRecipeManager().byKey(recipeId).orElse(null);
         if (holder == null || !(holder.value() instanceof SmithingRecipe recipe)) return false;
-        return menu.transferSmithingRecipe(recipe, choices, transferAll);
+        if (!(player.containerMenu instanceof ContainerArcaneTransmutationTablet)
+                && !ArcaneTabletAccess.openFromInventory(player)) return false;
+        return player.containerMenu instanceof ContainerArcaneTransmutationTablet menu
+                && menu.getPlayer() == player && menu.stillValid(player)
+                && menu.transferSmithingRecipe(recipe, choices, transferAll);
     }
 
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
