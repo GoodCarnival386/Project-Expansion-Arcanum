@@ -1,9 +1,10 @@
 {
-  "extends": "@uwu-codes/tsconfig",
   "ts-node": {
     "experimentalSpecifierResolution": "node"
   },
   "compilerOptions": {
+    "target": "es2022",
+    "strict": true,
     "outDir": "./build",
     "strictPropertyInitialization": false,
     "inlineSourceMap": true,

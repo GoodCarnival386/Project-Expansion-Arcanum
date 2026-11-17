@@ -10,10 +10,12 @@ import com.wjx.neoforge.projectexa.gui.GUICondenserMK3Input;
 import com.wjx.neoforge.projectexa.gui.GUICondenserMK3Output;
 import com.wjx.neoforge.projectexa.net.packets.to_server.PacketOpenTransmutationTablet;
 import com.wjx.neoforge.projectexa.registries.MenuTypes;
+import com.wjx.neoforge.projectexa.util.ClientUpdateChecker;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
@@ -22,6 +24,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public class ClientEvents {
     @EventBusSubscriber(modid = Main.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
     public static class ModEvents {
+        @SubscribeEvent
+        public static void onClientSetup(FMLClientSetupEvent event) {
+            ClientUpdateChecker.start();
+        }
+
         @SubscribeEvent
         public static void registerMenuScreens(RegisterMenuScreensEvent event) {
             event.register(MenuTypes.STONE_TABLE.get(), GUIStoneTable::new);

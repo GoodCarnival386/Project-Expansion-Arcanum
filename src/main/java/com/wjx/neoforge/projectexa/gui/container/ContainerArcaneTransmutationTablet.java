@@ -41,6 +41,8 @@ import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SmithingRecipe;
+import net.minecraft.world.item.crafting.SmithingRecipeInput;
 import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
@@ -101,6 +103,7 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
     private final StonecutterMenu stonecutter;
     private final AnvilMenu anvil;
     private int station;
+    private int smithingTransferSequence;
     private boolean craftingPanelVisible = true;
     public int lockX, lockY, consumeX, consumeY, unlearnX, unlearnY;
     private final Player player;
@@ -138,6 +141,10 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
                 station = value;
                 craftingPanelVisible = value == 0;
             }
+        });
+        addDataSlot(new DataSlot() {
+            public int get() { return smithingTransferSequence; }
+            public void set(int value) { smithingTransferSequence = value; }
         });
     }
 
@@ -228,6 +235,80 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
 
     public boolean isStation(int value) { return station == value && canUseStation(value); }
     public int getStation() { return station; }
+    public int getSmithingTransferSequence() { return smithingTransferSequence; }
+
+    public boolean transferSmithingRecipe(SmithingRecipe recipe, List<List<ItemStack>> choices, boolean transferAll) {
+        if (!(player instanceof ServerPlayer serverPlayer) || !stillValid(player)
+                || !canUseStation(1) || choices.size() != 3
+                || choices.stream().anyMatch(options -> options == null || options.size() > 256)) return false;
+        selectStation(1);
+        smithingTransferSequence = (smithingTransferSequence + 1) & 0x7FFF;
+        for (int index = 0; index < 3; index++) {
+            Slot slot = slots.get(SMITHING + index);
+            if (slot.hasItem()) slot.set(Util.returnToInventory(playerInv, player, slot.getItem(), false));
+        }
+        int passes = transferAll ? 64 : 1;
+        for (int pass = 0; pass < passes; pass++) {
+            boolean supplied = false;
+            for (int index = 0; index < 3; index++) {
+                supplied |= supplySmithingSlot(recipe, index, choices.get(index), !transferAll);
+            }
+            if (!supplied) break;
+        }
+        playerInv.setChanged();
+        provider.syncEmc(serverPlayer);
+        smithing.createResult();
+        broadcastChanges();
+        return recipe.matches(new SmithingRecipeInput(slots.get(SMITHING).getItem(),
+                slots.get(SMITHING + 1).getItem(), slots.get(SMITHING + 2).getItem()), player.level())
+                && slots.get(SMITHING + 3).hasItem();
+    }
+
+    private boolean supplySmithingSlot(SmithingRecipe recipe, int index, List<ItemStack> choices, boolean exactChoices) {
+        Slot slot = slots.get(SMITHING + index);
+        ItemStack existing = slot.getItem();
+        if (!existing.isEmpty() && existing.getCount() >= slot.getMaxStackSize(existing)) return false;
+        List<ItemStack> candidates = choices.stream().filter(stack -> !stack.isEmpty()).map(Util::cleanStack)
+                .filter(stack -> !stack.isEmpty() && isSmithingIngredient(recipe, index, stack) && slot.mayPlace(stack))
+                .sorted(Comparator.comparingLong(IEMCProxy.INSTANCE::getValue)).toList();
+
+        // Use real items first and preserve their damage, enchantments and other components.
+        for (ItemStack candidate : choices) {
+            if (candidate.isEmpty()) continue;
+            for (int inventorySlot = 0; inventorySlot < playerInv.getContainerSize(); inventorySlot++) {
+                ItemStack stack = playerInv.getItem(inventorySlot);
+                if (stack.isEmpty() || !slot.mayPlace(stack) || !isSmithingIngredient(recipe, index, stack)
+                        || candidate.getItem() != stack.getItem()
+                        || (exactChoices && !ItemStack.isSameItemSameComponents(candidate, stack))
+                        || (!existing.isEmpty() && !ItemStack.isSameItemSameComponents(existing, stack))) continue;
+                ItemStack added = stack.copyWithCount(1);
+                stack.shrink(1);
+                if (stack.isEmpty()) playerInv.setItem(inventorySlot, ItemStack.EMPTY);
+                if (existing.isEmpty()) slot.set(added);
+                else { existing.grow(1); slot.setChanged(); }
+                return true;
+            }
+        }
+        for (ItemStack candidate : candidates) {
+            if ((!existing.isEmpty() && !ItemStack.isSameItemSameComponents(existing, candidate))
+                    || !provider.hasKnowledge(candidate)) continue;
+            long value = IEMCProxy.INSTANCE.getValue(candidate);
+            if (value <= 0 || transmutationInventory.getAvailableEmc().compareTo(BigInteger.valueOf(value)) < 0) continue;
+            transmutationInventory.removeEmc(BigInteger.valueOf(value));
+            if (existing.isEmpty()) slot.set(candidate);
+            else { existing.grow(1); slot.setChanged(); }
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isSmithingIngredient(SmithingRecipe recipe, int index, ItemStack stack) {
+        return switch (index) {
+            case 0 -> recipe.isTemplateIngredient(stack);
+            case 1 -> recipe.isBaseIngredient(stack);
+            default -> recipe.isAdditionIngredient(stack);
+        };
+    }
 
     public StonecutterMenu getStonecutter() { return stonecutter; }
     public AnvilMenu getAnvil() { return anvil; }

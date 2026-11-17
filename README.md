@@ -11,7 +11,7 @@ Independent maintenance fork of [Project Expansion](https://github.com/DonovanDM
 The runtime namespace remains `projectexa`. Porting features does **not** certify cross-version world migration. Do not open an irreplaceable 1.20.1 world in this development build.
 
 ## Development
-`gradlew.bat compileJava` compiles Java sources. `gradlew.bat runClient` and `gradlew.bat build` invoke the asset generator through Node.js on all platforms. Install Node.js and npm and add them to PATH; Bash is not required on Windows. The generator installs dependencies from the lockfile on first use and when the dependency manifests change, then reuses its local dependency cache.
+`gradlew.bat compileJava` compiles Java sources. Normal `runClient` and `build` tasks use the checked-in `src/generated/resources`; they do not require Node.js or Bash. After editing resource templates, manually run `gradlew.bat data` to regenerate and commit the outputs. That optional task requires Node.js and npm on PATH; Gradle installs the locked dependencies and invokes Node directly.
 
 Optional integrations must remain optional. This migration covers the stone table, Final Star, JEI transfer, personal EMC warehouse, projectiles and living-entity repair. Optional Ars Nouveau 5.13.3, Create 6.0.10 and Goety 3.2.1 material-supply integrations are now implemented. See [the API audit](docs/INTEGRATIONS_1_21_1.md) for version requirements and release-package caveats; game runtime acceptance is still pending.
 

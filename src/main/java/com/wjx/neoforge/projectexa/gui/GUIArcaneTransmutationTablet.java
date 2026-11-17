@@ -73,6 +73,7 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     private Button clear;
     private final Button[] stationButtons = new Button[4];
     private int selectedStation = 0;
+    private int seenSmithingTransferSequence;
     private boolean craftingPanelVisible = true;
     private final StationPanelAnimation stationAnimation = new StationPanelAnimation(0, Util.getMillis());
 
@@ -314,6 +315,11 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     @Override
     protected void containerTick() {
         super.containerTick();
+        if (seenSmithingTransferSequence != menu.getSmithingTransferSequence()) {
+            seenSmithingTransferSequence = menu.getSmithingTransferSequence();
+            stationAnimation.reset(1, Util.getMillis());
+            applyStation(1);
+        }
         if (!stationAnimation.isMoving() && menu.getStation() != selectedStation) {
             // Recipe transfers can reopen the crafting panel from the server.
             stationAnimation.reset(menu.getStation(), Util.getMillis());

@@ -22,4 +22,4 @@ JEI 取物支持 19.57.0.451 与 19.70.0.469，最低版本调整为 19.57.0.451
 已继续接入 Ars Nouveau、Create、Goety 的配方补料及 Goety EMC 映射，详见 [接口核对记录](docs/INTEGRATIONS_1_21_1.md)。Botania、TACZ、RSI 的专门配方或枪械联动仍未接入。已有 EMI 奥术终端填充保持原状，新增的跨界面入口属于 JEI 功能。
 
 ## 开发与限制
-使用 Java 21 执行 gradlew.bat compileJava。直接执行 `gradlew.bat runClient` 或 `gradlew.bat build` 会通过 Node.js 生成资源；需安装 Node.js、npm 并加入 PATH，Windows 无需 Bash。首次生成及依赖清单变化时按锁文件安装依赖，后续复用本地依赖缓存，无需再用 `-x data` 绕过资源任务。编译通过不代表游戏内功能或旧存档迁移已验收；不要用未备份的重要旧存档进行跨版本升级。
+使用 Java 21 执行 gradlew.bat compileJava。日常 `runClient` 和 `build` 直接使用仓库内的 `src/generated/resources`，不需要 Node.js、Bash 或 `-x data`。修改资源模板后才需手动执行 `gradlew.bat data`，并提交生成结果；此可选任务需要 PATH 中的 Node.js、npm，由 Gradle 安装锁定依赖并直接调用 Node。编译通过不代表游戏内功能或旧存档迁移已验收；不要用未备份的重要旧存档进行跨版本升级。

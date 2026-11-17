@@ -16,13 +16,14 @@ public final class PacketHandler {
     public PacketHandler(IEventBus modEventBus, ArtifactVersion version) {
         modEventBus.addListener(RegisterPayloadHandlersEvent.class, event -> {
             // Station slots, input actions, and EMC retrieval require the same protocol on both sides.
-            PayloadRegistrar registrar = event.registrar(version + "-arcane-features-3");
+            PayloadRegistrar registrar = event.registrar(version + "-arcane-features-4");
             register(registrar);
         });
     }
 
     public void register(PayloadRegistrar registrar) {
         registrar.playToServer(PacketArcaneAnvilName.TYPE, PacketArcaneAnvilName.STREAM_CODEC, IPacket::handle);
+        registrar.playToServer(PacketArcaneSmithingTransfer.TYPE, PacketArcaneSmithingTransfer.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketJeiTransmute.TYPE, PacketJeiTransmute.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketJeiCreativeCursorAck.TYPE, PacketJeiCreativeCursorAck.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketWorldEmcPick.TYPE, PacketWorldEmcPick.STREAM_CODEC, IPacket::handle);

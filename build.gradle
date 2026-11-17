@@ -266,10 +266,27 @@ tasks.register("updateJSON", UpdateJson) {
     setGroup("publishing")
 }
 
+def installGeneratorDependencies = tasks.register("installGeneratorDependencies", Exec) {
+    group = "build setup"
+    description = "Installs dependencies for manual asset generation."
+    workingDir file("src/main/generation")
+    inputs.files("src/main/generation/package.json", "src/main/generation/package-lock.json")
+    outputs.dir("src/main/generation/node_modules")
+    if (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows")) {
+        commandLine "cmd.exe", "/d", "/c", "npm.cmd", "ci", "--ignore-scripts", "--no-audit", "--no-fund"
+    } else {
+        commandLine "npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"
+    }
+}
+
 tasks.register("data", Data) {
     setGroup("build")
+    description = "Manually regenerates assets; normal builds use the checked-in generated resources."
+    dependsOn installGeneratorDependencies
 }
-processResources.dependsOn(data)
+tasks.named("processResources") {
+    mustRunAfter tasks.named("data")
+}
 
 tasks.register("publish", Publish) {
     setGroup("publishing")

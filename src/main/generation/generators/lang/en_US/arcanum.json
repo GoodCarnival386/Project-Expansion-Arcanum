@@ -1,5 +1,8 @@
 {
+  "text.projectexa.update_available": "[Project Expansion: Arcanum] A new version is available: %s",
   "jei.projectexa.transfer.to_arcane_transmutation_table": "Transfer to Arcane Transmutation Table",
+  "jei.projectexa.transfer.materials_ready": "All materials are available from your inventory or EMC.",
+  "jei.projectexa.transfer.force": "Hold Shift to transfer the available materials.",
   "block.projectexa.stone_table": "Stone Transmutation Table",
   "block.projectexa.stone_table.tooltip": "Transmute items using personal knowledge and EMC.",
   "item.projectexa.stone_table": "Stone Transmutation Table",
