@@ -43,6 +43,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SmithingRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -107,6 +108,7 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
     private final StonecutterMenu stonecutter;
     private final AnvilMenu anvil;
     private int station;
+    private int smithingTransferSequence;
     private final IKnowledgeProvider provider;
 
     public int lockX;
@@ -141,6 +143,10 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
         addDataSlot(new DataSlot() {
             public int get() { return anvil.getCost(); }
             public void set(int value) { anvil.setMaximumCost(value); }
+        });
+        addDataSlot(new DataSlot() {
+            public int get() { return smithingTransferSequence; }
+            public void set(int value) { smithingTransferSequence = value; }
         });
     }
 
@@ -229,6 +235,62 @@ public class ContainerArcaneTransmutationTablet extends PEHandContainer {
     }
 
     public boolean isStation(int value) { return station == value && canUseStation(value); }
+    public int getSmithingTransferSequence() { return smithingTransferSequence; }
+
+    public void transferSmithingRecipe(SmithingRecipe recipe, List<List<ItemStack>> choices, boolean transferAll) {
+        if (player.level().isClientSide || !canUseStation(1)) return;
+        selectStation(1);
+        smithingTransferSequence = (smithingTransferSequence + 1) & 0x7FFF;
+        for (int i = 0; i < 3; i++) {
+            Slot slot = slots.get(SMITHING + i);
+            if (slot.hasItem()) slot.set(Util.returnToInventory(playerInv, player, slot.getItem(), false));
+        }
+        int passes = transferAll ? 64 : 1;
+        for (int pass = 0; pass < passes; pass++) {
+            for (int i = 0; i < 3 && i < choices.size(); i++) {
+                Slot slot = slots.get(SMITHING + i);
+                for (ItemStack candidate : choices.get(i)) {
+                    ItemStack clean = Util.cleanStack(candidate);
+                    boolean valid = switch (i) {
+                        case 0 -> recipe.isTemplateIngredient(clean);
+                        case 1 -> recipe.isBaseIngredient(clean);
+                        default -> recipe.isAdditionIngredient(clean);
+                    };
+                    if (clean.isEmpty() || !valid || !slot.mayPlace(clean)) continue;
+                    ItemStack existing = slot.getItem();
+                    if (!existing.isEmpty() && (!Util.areStacksEqual(player.level().registryAccess(), existing, clean)
+                            || existing.getCount() >= slot.getMaxStackSize(existing))) continue;
+                    boolean supplied = false;
+                    for (int j = 0; j < playerInv.getContainerSize(); j++) {
+                        ItemStack stack = playerInv.getItem(j);
+                        if (!stack.isEmpty() && slot.mayPlace(stack)
+                                && Util.areStacksEqual(player.level().registryAccess(), clean, Util.cleanStack(stack))) {
+                            ItemStack added = stack.copyWithCount(1);
+                            stack.shrink(1);
+                            if (stack.isEmpty()) playerInv.setItem(j, ItemStack.EMPTY);
+                            if (existing.isEmpty()) slot.set(added);
+                            else { existing.grow(1); slot.setChanged(); }
+                            supplied = true;
+                            break;
+                        }
+                    }
+                    if (!supplied && provider.hasKnowledge(clean)) {
+                        long value = IEMCProxy.INSTANCE.getValue(clean);
+                        if (value > 0 && transmutationInventory.getAvailableEmc().compareTo(BigInteger.valueOf(value)) >= 0) {
+                            transmutationInventory.removeEmc(BigInteger.valueOf(value));
+                            if (existing.isEmpty()) slot.set(clean);
+                            else { existing.grow(1); slot.setChanged(); }
+                            supplied = true;
+                        }
+                    }
+                    if (supplied) break;
+                }
+            }
+        }
+        playerInv.setChanged();
+        if (player instanceof ServerPlayer serverPlayer) provider.syncEmc(serverPlayer);
+        broadcastChanges();
+    }
 
     public StonecutterMenu getStonecutter() { return stonecutter; }
     public AnvilMenu getAnvil() { return anvil; }

@@ -3,6 +3,7 @@ package com.wjx.forge.projectexa.mixin;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.wjx.forge.projectexa.integrations.jei.UniversalArcaneCraftingRecipeTransferHandler;
+import com.wjx.forge.projectexa.integrations.jei.ArcaneSmithingTransferHandler;
 import com.wjx.forge.projectexa.integrations.jei.ArsNouveauJeiRecipeTypes;
 import com.wjx.forge.projectexa.integrations.jei.ArsNouveauRecipeTransferHandler;
 import com.wjx.forge.projectexa.integrations.jei.BotaniaJeiRecipeTypes;
@@ -15,6 +16,7 @@ import com.wjx.forge.projectexa.integrations.jei.GoetyRitualTransferHandler;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraftforge.fml.ModList;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,6 +39,10 @@ public class JeiRecipeTransferManagerMixin {
             AbstractContainerMenu container, IRecipeCategory<?> recipeCategory,
             Operation<Optional<?>> original) {
         Optional<?> handler = original.call(container, recipeCategory);
+        if (recipeCategory.getRecipeType() == RecipeTypes.SMITHING
+                && ArcaneSmithingTransferHandler.available(Minecraft.getInstance().player)) {
+            return Optional.of(ArcaneSmithingTransferHandler.INSTANCE);
+        }
         if (handler.isPresent()) {
             return handler;
         }

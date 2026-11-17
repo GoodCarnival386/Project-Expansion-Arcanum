@@ -34,6 +34,10 @@ public final class ArcaneCraftingTransferSupport {
     }
 
     public static Status check(IRecipeSlotsView slots, Player player, AbstractContainerMenu container) {
+        return check(slots, player, container, false);
+    }
+
+    public static Status check(IRecipeSlotsView slots, Player player, AbstractContainerMenu container, boolean smithing) {
         List<IRecipeSlotView> inputs = slots.getSlotViews(RecipeIngredientRole.INPUT);
         List<List<ItemStack>> options = new ArrayList<>(9);
         int emptyMask = 0;
@@ -64,7 +68,10 @@ public final class ArcaneCraftingTransferSupport {
         // A transfer first clears the tablet's existing grid, making these real items reusable.
         if (container instanceof ContainerArcaneTransmutationTablet) {
             for (Slot slot : container.slots) {
-                if (slot instanceof PXCraftingSlot) inventory.add(slot.getItem());
+                if (smithing ? slot.index >= ContainerArcaneTransmutationTablet.SMITHING
+                        && slot.index < ContainerArcaneTransmutationTablet.SMITHING + 3 : slot instanceof PXCraftingSlot) {
+                    inventory.add(slot.getItem());
+                }
             }
         }
 

@@ -4,6 +4,7 @@ import com.wjx.forge.projectexa.Main;
 import com.wjx.forge.projectexa.net.packets.IPacket;
 import com.wjx.forge.projectexa.net.packets.to_client.*;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketArcaneAnvilName;
+import com.wjx.forge.projectexa.net.packets.to_server.PacketArcaneSmithingTransfer;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketCreateTeleportDestination;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketDeleteTeleportDestination;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketTeleportBack;
@@ -39,7 +40,7 @@ import java.util.function.Function;
 @SuppressWarnings("unused")
 public class PacketHandler {
 
-    private static final String PROTOCOL_VERSION = Integer.toString(9);
+    private static final String PROTOCOL_VERSION = Integer.toString(10);
     private static final SimpleChannel HANDLER = NetworkRegistry.ChannelBuilder
             .named(Main.rl("primary"))
             .clientAcceptedVersions(PROTOCOL_VERSION::equals)
@@ -79,6 +80,7 @@ public class PacketHandler {
         registerServerToClient(PacketJeiEmcConfig.class, PacketJeiEmcConfig::decode);
         registerClientToServer(PacketWorldEmcPick.class, PacketWorldEmcPick::decode);
         registerServerToClient(PacketWorldPickRsiFailure.class, PacketWorldPickRsiFailure::decode);
+        registerClientToServer(PacketArcaneSmithingTransfer.class, PacketArcaneSmithingTransfer::decode);
     }
 
     private static <MSG extends IPacket> void registerClientToServer(Class<MSG> type, Function<FriendlyByteBuf, MSG> decoder) {

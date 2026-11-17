@@ -73,6 +73,7 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     private int selectedStation = 0;
     private boolean craftingPanelVisible = true;
     private final StationPanelAnimation stationAnimation = new StationPanelAnimation(0, Util.getMillis());
+    private int seenSmithingTransferSequence;
 
     public GUIArcaneTransmutationTablet(ContainerArcaneTransmutationTablet container, Inventory playerInventory, Component title) {
         super(container, playerInventory, title);
@@ -332,6 +333,10 @@ public class GUIArcaneTransmutationTablet extends PEContainerScreen<ContainerArc
     @Override
     protected void containerTick() {
         super.containerTick();
+        if (seenSmithingTransferSequence != menu.getSmithingTransferSequence()) {
+            seenSmithingTransferSequence = menu.getSmithingTransferSequence();
+            if (stationAnimation.target() != 1) selectStation(1);
+        }
         updateButtons();
         if (selectedStation == 1) tickSmithingSlotIcons();
         ItemStack input = menu.getAnvil().getSlot(0).getItem();
