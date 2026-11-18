@@ -50,6 +50,10 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.endsWith(".ForgematicaMaterialListMixin")) {
+            return hasMethod(targetClassName, "getElementTotalWidth", "()I")
+                    && hasClass("fi.dy.masa.malilib.gui.button.ButtonGeneric");
+        }
         if (mixinClassName.endsWith(".RsiLegacyPlanLayoutMixin")
                 || mixinClassName.endsWith(".RsiPlanRenderEngineMixin")) {
             return hasMethod(RSI_PLAN_SCREEN, "layoutContentSections", "(Lnet/minecraft/client/gui/Font;I)V");

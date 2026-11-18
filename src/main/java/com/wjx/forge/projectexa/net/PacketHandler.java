@@ -17,6 +17,7 @@ import com.wjx.forge.projectexa.net.packets.to_server.PacketGoetyRecipeTransmuta
 import com.wjx.forge.projectexa.net.packets.to_server.PacketArsNouveauRecipeTransmutation;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketBotaniaRecipeTransmutation;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketCreateRecipeTransmutation;
+import com.wjx.forge.projectexa.net.packets.to_server.PacketForgematicaTransmute;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutationTablet;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketOpenArcaneTransmutationTabletWithRecipe;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketStoneTableAction;
@@ -40,7 +41,7 @@ import java.util.function.Function;
 @SuppressWarnings("unused")
 public class PacketHandler {
 
-    private static final String PROTOCOL_VERSION = Integer.toString(10);
+    private static final String PROTOCOL_VERSION = Integer.toString(11);
     private static final SimpleChannel HANDLER = NetworkRegistry.ChannelBuilder
             .named(Main.rl("primary"))
             .clientAcceptedVersions(PROTOCOL_VERSION::equals)
@@ -81,6 +82,8 @@ public class PacketHandler {
         registerClientToServer(PacketWorldEmcPick.class, PacketWorldEmcPick::decode);
         registerServerToClient(PacketWorldPickRsiFailure.class, PacketWorldPickRsiFailure::decode);
         registerClientToServer(PacketArcaneSmithingTransfer.class, PacketArcaneSmithingTransfer::decode);
+        registerClientToServer(PacketForgematicaTransmute.class, PacketForgematicaTransmute::decode);
+        registerServerToClient(PacketForgematicaTransmuteResult.class, PacketForgematicaTransmuteResult::decode);
     }
 
     private static <MSG extends IPacket> void registerClientToServer(Class<MSG> type, Function<FriendlyByteBuf, MSG> decoder) {

@@ -41,12 +41,18 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+// Compile the MaFgLib fixes against the same mapped dependencies, outside the packaged main source set.
+sourceSets.create('devClient') {
+    compileClasspath += sourceSets.main.compileClasspath
+}
+
 minecraft {
     mappings channel: getProperty("mappingsChannel"), version: getProperty("mappingsVersion")
 
     runs {
         client {
             workingDirectory project.file('run')
+            args '--mixin.config', 'projectexa.dev.mixins.json'
 
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
@@ -54,6 +60,7 @@ minecraft {
             mods {
                 projectexa {
                     source sourceSets.main
+                    source sourceSets.devClient
                 }
             }
         }
@@ -167,6 +174,10 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:patchouli-306770:${getProperty("patchouliVersion")}")
     compileOnly fg.deobf("curse.maven:polymorph-388800:${getProperty("polymorphVersion")}")
     runtimeOnly fg.deobf("curse.maven:polymorph-388800:${getProperty("polymorphVersion")}")
+    compileOnly fg.deobf("curse.maven:forgematica-912441:${getProperty("forgematicaVersion")}")
+    runtimeOnly fg.deobf("curse.maven:forgematica-912441:${getProperty("forgematicaVersion")}")
+    compileOnly fg.deobf("curse.maven:mafglib-910766:${getProperty("mafglibVersion")}")
+    runtimeOnly fg.deobf("curse.maven:mafglib-910766:${getProperty("mafglibVersion")}")
 
     // Optional integrations and their development runtime dependencies.
     compileOnly fg.deobf("dev.ftb.mods:ftb-quests-forge:${getProperty("ftbQuestsVersion")}") { transitive = false }

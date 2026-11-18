@@ -9,6 +9,7 @@
 		"ArcaneStationSlotAnimationMixin",
 		"DeleteWeebShitMixin",
 		"EMCFormatterMixin",
+		"ForgematicaMaterialListMixin",
 		"ShutTheFuckUpMixin",
 		"KnowledgeSyncPKTMixin",
 		"KnowledgeSyncChangePKTMixin",

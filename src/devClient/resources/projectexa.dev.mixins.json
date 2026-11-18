@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "com.wjx.forge.projectexa.devmixin",
+	"plugin": "com.wjx.forge.projectexa.devmixin.DevMaFgLibMixinConfigPlugin",
+	"compatibilityLevel": "JAVA_17",
+	"client": [
+		"DevMaFgLibEditBoxMixin",
+		"DevMaFgLibTextFieldMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
