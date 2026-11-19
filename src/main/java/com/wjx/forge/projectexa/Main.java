@@ -1,6 +1,8 @@
 package com.wjx.forge.projectexa;
 
 import com.wjx.forge.projectexa.config.Config;
+import com.wjx.forge.projectexa.integrations.rsi.RsiCraftingKnowledge;
+import com.wjx.forge.projectexa.integrations.rsi.RsiItemRetrieval;
 import com.wjx.forge.projectexa.item.ItemPersonalEmcWarehouse;
 import com.wjx.forge.projectexa.net.PacketHandler;
 import com.wjx.forge.projectexa.net.packets.to_client.PacketJeiEmcConfig;
@@ -51,6 +53,10 @@ public class Main {
         MinecraftForge.EVENT_BUS.addListener(this::serverTick);
         MinecraftForge.EVENT_BUS.addListener(this::onPlayerLogin);
         context.registerConfig(ModConfig.Type.COMMON, Config.Spec, "project-expansion.toml");
+        if (ModList.get().isLoaded("rs_integration")) {
+            RsiCraftingKnowledge.register();
+            RsiItemRetrieval.register();
+        }
 
         Fuel.registerAll();
         Matter.registerAll();

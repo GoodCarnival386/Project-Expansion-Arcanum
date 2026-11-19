@@ -1,11 +1,7 @@
 package com.wjx.forge.projectexa.net.packets.to_server;
 
-import com.wjx.forge.projectexa.integrations.rsi.RsiWorldPick;
 import com.wjx.forge.projectexa.config.Config;
-import com.wjx.forge.projectexa.mixin.ProjectExaMixinConfigPlugin;
-import com.wjx.forge.projectexa.net.PacketHandler;
 import com.wjx.forge.projectexa.net.packets.IPacket;
-import com.wjx.forge.projectexa.net.packets.to_client.PacketWorldPickRsiFailure;
 import com.wjx.forge.projectexa.util.Util;
 import moze_intel.projecte.api.capabilities.IKnowledgeProvider;
 import moze_intel.projecte.api.proxy.IEMCProxy;
@@ -21,7 +17,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.network.NetworkEvent;
 import java.math.BigInteger;
 
@@ -39,26 +34,20 @@ public record PacketWorldEmcPick(BlockPos position, boolean stack) implements IP
                 && ItemStack.isSameItemSameTags(held, picked)
                 && ItemStack.isSameItemSameTags(held, Util.cleanStack(picked));
         if (!topUp && inventory.findSlotMatchingItem(picked) >= 0) return;
-        boolean rsiTried = ModList.get().isLoaded("rs_integration")
-                && ProjectExaMixinConfigPlugin.supportsRsiWorldPick() && player.getMainHandItem().isEmpty();
-        if (rsiTried && RsiWorldPick.tryPick(player, picked)) return;
-        if (!Config.enableWorldEmcPick.get() || !PacketOpenArcaneTransmutationTablet.hasTablet(player)) {
-            if (rsiTried) PacketHandler.sendTo(new PacketWorldPickRsiFailure(picked.copyWithCount(1)), player);
-            return;
-        }
+        if (!Config.enableWorldEmcPick.get() || !PacketOpenArcaneTransmutationTablet.hasTablet(player)) return;
         ItemStack output = Util.cleanStack(picked);
         IKnowledgeProvider provider = Util.getKnowledgeProvider(player);
-        if (output.isEmpty() || provider == null) { fail(player, picked, rsiTried, "provider_unavailable"); return; }
-        if (!provider.hasKnowledge(output)) {
-            if (rsiTried) PacketHandler.sendTo(new PacketWorldPickRsiFailure(picked.copyWithCount(1)), player);
+        if (output.isEmpty() || provider == null) {
+            fail(player, "provider_unavailable");
             return;
         }
+        if (!provider.hasKnowledge(output)) return;
         long value = IEMCProxy.INSTANCE.getValue(output);
-        if (value <= 0) { fail(player, picked, rsiTried, "no_emc", output.getHoverName()); return; }
+        if (value <= 0) { fail(player, "no_emc", output.getHoverName()); return; }
         BigInteger unit = BigInteger.valueOf(value);
         int requested = topUp ? held.getMaxStackSize() - held.getCount() : stack ? output.getMaxStackSize() : 1;
         int count = provider.getEmc().divide(unit).min(BigInteger.valueOf(requested)).intValue();
-        if (count <= 0) { fail(player, picked, rsiTried, "insufficient_emc", Long.toString(value)); return; }
+        if (count <= 0) { fail(player, "insufficient_emc", Long.toString(value)); return; }
         int target = topUp ? inventory.selected : inventory.getSuitableHotbarSlot();
         int empty = -1;
         if (topUp) {
@@ -67,7 +56,7 @@ public record PacketWorldEmcPick(BlockPos position, boolean stack) implements IP
             ItemStack displaced = inventory.getItem(target);
             if (!displaced.isEmpty()) {
                 for (int i = 9; i < 36; i++) if (inventory.getItem(i).isEmpty()) { empty = i; break; }
-                if (empty < 0) { fail(player, picked, rsiTried, "no_space"); return; }
+                if (empty < 0) { fail(player, "no_space"); return; }
             }
             if (empty >= 0) inventory.setItem(empty, displaced);
             inventory.setItem(target, output.copyWithCount(count));
@@ -84,8 +73,7 @@ public record PacketWorldEmcPick(BlockPos position, boolean stack) implements IP
         player.sendSystemMessage(Component.translatable("text.projectexa.jei_transmuted", count, output.getHoverName(), cost.toString()));
     }
 
-    private static void fail(ServerPlayer player, ItemStack picked, boolean rsiTried, String reason, Object... args) {
-        if (rsiTried) PacketHandler.sendTo(new PacketWorldPickRsiFailure(picked.copyWithCount(1)), player);
+    private static void fail(ServerPlayer player, String reason, Object... args) {
         player.sendSystemMessage(Component.translatable("text.projectexa.jei_transmute." + reason, args)
                 .withStyle(ChatFormatting.RED));
     }

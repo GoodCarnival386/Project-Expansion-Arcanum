@@ -14,7 +14,7 @@ import java.util.List;
 
 /** No RSI types in the wire format: RSI remains an optional dependency. */
 public record PacketRsiEmcEstimate(long requestId, CompoundTag storageReference,
-                                   boolean inputsAvailable, List<Demand> demands) implements IPacket {
+                                   int sourceMask, boolean inputsAvailable, List<Demand> demands) implements IPacket {
     public static final int MAX_MATERIALS = 4096;
 
     public record Demand(ItemStack stack, int count) {}
@@ -30,10 +30,11 @@ public record PacketRsiEmcEstimate(long requestId, CompoundTag storageReference,
     public void encode(FriendlyByteBuf buffer) {
         buffer.writeLong(requestId);
         buffer.writeNbt(storageReference);
+        buffer.writeByte(sourceMask);
         buffer.writeBoolean(inputsAvailable);
         buffer.writeVarInt(demands.size());
         for (Demand demand : demands) {
-            buffer.writeItem(demand.stack());
+            buffer.writeItemStack(demand.stack(), false);
             buffer.writeVarInt(demand.count());
         }
     }
@@ -41,6 +42,8 @@ public record PacketRsiEmcEstimate(long requestId, CompoundTag storageReference,
     public static PacketRsiEmcEstimate decode(FriendlyByteBuf buffer) {
         long id = buffer.readLong();
         CompoundTag reference = buffer.readNbt();
+        int sources = buffer.readUnsignedByte();
+        if ((sources & ~7) != 0) throw new DecoderException("Invalid EMC material sources");
         boolean inputsAvailable = buffer.readBoolean();
         int size = buffer.readVarInt();
         if (size < 0 || size > MAX_MATERIALS) throw new DecoderException("Too many EMC materials");
@@ -51,6 +54,6 @@ public record PacketRsiEmcEstimate(long requestId, CompoundTag storageReference,
             if (stack.isEmpty() || count <= 0) throw new DecoderException("Invalid EMC demand");
             demands.add(new Demand(stack.copyWithCount(1), count));
         }
-        return new PacketRsiEmcEstimate(id, reference, inputsAvailable, List.copyOf(demands));
+        return new PacketRsiEmcEstimate(id, reference, sources, inputsAvailable, List.copyOf(demands));
     }
 }

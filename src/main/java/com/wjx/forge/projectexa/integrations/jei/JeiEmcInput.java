@@ -95,7 +95,7 @@ public final class JeiEmcInput {
                                 minecraft.player.containerMenu.containerId, target, one,
                                 target == -1 && screen instanceof CreativeModeInventoryScreen,
                                 target == -1 && screen instanceof CreativeModeInventoryScreen
-                                        ? minecraft.player.containerMenu.getCarried().copy() : ItemStack.EMPTY, false));
+                                        ? minecraft.player.containerMenu.getCarried().copy() : ItemStack.EMPTY));
                     }
                     return new SameElementInputHandler(handler, clicked::isMouseOver);
                 });

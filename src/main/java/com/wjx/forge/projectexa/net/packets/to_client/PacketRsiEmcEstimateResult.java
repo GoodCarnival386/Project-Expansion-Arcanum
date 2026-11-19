@@ -1,12 +1,12 @@
 package com.wjx.forge.projectexa.net.packets.to_client;
 
-import com.wjx.forge.projectexa.integrations.rsi.RsiEmcPreview;
+import com.wjx.forge.projectexa.integrations.rsi.RsiPlanEmcPreview;
 import com.wjx.forge.projectexa.net.packets.IPacket;
 import com.wjx.forge.projectexa.net.packets.to_server.PacketRsiEmcEstimate;
 import io.netty.handler.codec.DecoderException;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.math.BigInteger;
@@ -27,7 +27,7 @@ public record PacketRsiEmcEstimateResult(long requestId, int state, BigInteger b
 
     @Override
     public void handle(NetworkEvent.Context context) {
-        if (Minecraft.getInstance().screen instanceof RsiEmcPreview preview) preview.projectexa$acceptQuote(this);
+        if (ModList.get().isLoaded("rs_integration")) RsiPlanEmcPreview.acceptQuote(this);
     }
 
     @Override
@@ -37,7 +37,7 @@ public record PacketRsiEmcEstimateResult(long requestId, int state, BigInteger b
         buffer.writeUtf(balance.toString());
         buffer.writeVarInt(costs.size());
         for (Cost cost : costs) {
-            buffer.writeItem(cost.stack());
+            buffer.writeItemStack(cost.stack(), false);
             buffer.writeVarInt(cost.count());
             buffer.writeUtf(cost.emc().toString());
         }

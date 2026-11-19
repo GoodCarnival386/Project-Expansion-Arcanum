@@ -1,6 +1,7 @@
 package com.wjx.forge.projectexa.integrations.rsi;
 
 import com.huanghuang.rsintegration.crafting.MaterialMatcher;
+import com.huanghuang.rsintegration.crafting.MaterialSourceSelection;
 import moze_intel.projecte.integration.IntegrationHelper;
 import moze_intel.projecte.integration.curios.CuriosIntegration;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,12 +24,14 @@ final class RsiPhysicalInventory {
 
     private RsiPhysicalInventory() {}
 
-    static RsiPhysicalInventory snapshot(ServerPlayer player) {
+    static RsiPhysicalInventory snapshot(ServerPlayer player, MaterialSourceSelection sources) {
         RsiPhysicalInventory stock = new RsiPhysicalInventory();
-        for (ItemStack stack : player.getInventory().items) {
-            if (!stack.isEmpty()) stock.stacks.add(stack.copy());
+        if (sources.inventory()) {
+            for (ItemStack stack : player.getInventory().items) {
+                if (!stack.isEmpty()) stock.stacks.add(stack.copy());
+            }
         }
-        if (!ModList.get().isLoaded("sophisticatedbackpacks")) return stock;
+        if (!sources.backpacks() || !ModList.get().isLoaded("sophisticatedbackpacks")) return stock;
 
         // Mirror RSI: backpacks in main inventory and equipped Curios, not armor/offhand,
         // loose Curios ingredients, nested backpacks or the player's wrapped item capability.

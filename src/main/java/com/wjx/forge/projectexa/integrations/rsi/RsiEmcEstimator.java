@@ -1,6 +1,7 @@
 package com.wjx.forge.projectexa.integrations.rsi;
 
 import com.huanghuang.rsintegration.RSIntegrationMod;
+import com.huanghuang.rsintegration.crafting.MaterialSourceSelection;
 import com.huanghuang.rsintegration.crafting.endpoint.CraftStorageEndpoints;
 import com.huanghuang.rsintegration.crafting.tree.IngredientKey;
 import com.huanghuang.rsintegration.storage.*;
@@ -36,7 +37,7 @@ public final class RsiEmcEstimator {
                 .map(provider -> provider.getEmc()).orElse(BigInteger.ZERO);
         if (!request.inputsAvailable()) {
             unavailable(player, request, PacketRsiEmcEstimateResult.INPUTS_UNAVAILABLE, balance,
-                    "Incomplete graph/legacy-step material information", null);
+                    "Incomplete initial material information", null);
             return;
         }
         if (request.demands().isEmpty()) {
@@ -55,12 +56,14 @@ public final class RsiEmcEstimator {
     }
 
     private static void quote(ServerPlayer player, PacketRsiEmcEstimate request, BigInteger balance) {
-        boolean legacyInventory = RsiStorageCompat.hasLegacyInventory();
+        MaterialSourceSelection sources = MaterialSourceSelection.fromMask(request.sourceMask());
+        boolean hasRefinedStorage = RsiStorageCompat.hasRefinedStorageApi();
+        boolean inventoryEmc = hasRefinedStorage && sources.backpacks();
         StorageSession session = null;
-        if (request.storageReference() != null) {
+        if (sources.storageNetwork() && request.storageReference() != null) {
             try {
                 StorageReference reference = StorageReferenceCodec.decode(request.storageReference()).orElseThrow();
-                if (RsiStorageCompat.RS.equals(reference.backendId().value()) && legacyInventory) {
+                if (RsiStorageCompat.RS.equals(reference.backendId().value()) && hasRefinedStorage) {
                     session = CraftStorageEndpoints.resolve(reference, player).orElseThrow().session();
                 } else {
                     // Resolve the selected backend, not whichever mod happens to be installed.
@@ -78,12 +81,12 @@ public final class RsiEmcEstimator {
                         "Selected storage session did not grant view/extract access", null);
             }
         }
-        if (!legacyInventory && session == null) {
-            throw new QuoteUnavailable(PacketRsiEmcEstimateResult.NETWORK_UNAVAILABLE,
-                    "No EMC crafting endpoint was supplied", null);
-        }
         boolean networkEmc = session != null && RsiStorageCompat.hasNetworkEmc(
                 session.reference().backendId().value());
+        if (!inventoryEmc && !networkEmc) {
+            reply(player, request, PacketRsiEmcEstimateResult.READY, balance, List.of());
+            return;
+        }
         Set<net.minecraft.world.item.Item> types = new HashSet<>();
         request.demands().forEach(demand -> types.add(demand.stack().getItem()));
         Map<StorageItemKey, Long> network = new HashMap<>();
@@ -104,7 +107,7 @@ public final class RsiEmcEstimator {
         }
         RsiPhysicalInventory physical;
         try {
-            physical = RsiPhysicalInventory.snapshot(player);
+            physical = RsiPhysicalInventory.snapshot(player, sources);
         } catch (RuntimeException exception) {
             throw new QuoteUnavailable(PacketRsiEmcEstimateResult.INVENTORY_UNAVAILABLE,
                     "Player/backpack stock could not be read", exception);
@@ -149,7 +152,7 @@ public final class RsiEmcEstimator {
                 // With RS's ledger Mixins active (including a selected BD network), EMC is
                 // appended AFTER player/backpack items, not advertised by the BD network as well.
                 remaining -= physical.allocateUpTo(stack, remaining);
-                converted = legacyInventory ? remaining : 0;
+                converted = remaining;
             }
             if (converted > 0 && value > 0) {
                 costs.add(new Cost(stack, (int) converted,
@@ -163,7 +166,7 @@ public final class RsiEmcEstimator {
                                                                  Set<net.minecraft.world.item.Item> types) {
         // Use the same templates, individual balance limits and normalized identities as the BD Mixin.
         // No extraction (not even simulated extraction) is needed for this detached calculation.
-        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, List.of(), Map.of());
+        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, false, List.of(), Map.of());
         Map<StorageItemKey, NetworkOffer> offers = new LinkedHashMap<>();
         for (int slot = 0; slot < virtual.getSlots(); slot++) {
             ItemStack template = virtual.templateForQuote(slot);

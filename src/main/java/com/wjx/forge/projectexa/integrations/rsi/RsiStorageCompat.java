@@ -9,7 +9,7 @@ public final class RsiStorageCompat {
 
     private RsiStorageCompat() {}
 
-    public static boolean hasLegacyInventory() {
+    public static boolean hasRefinedStorageApi() {
         ClassLoader[] loaders = {RsiStorageCompat.class.getClassLoader(),
                 Thread.currentThread().getContextClassLoader()};
         for (ClassLoader loader : loaders) {
@@ -21,6 +21,6 @@ public final class RsiStorageCompat {
     public static boolean hasNetworkEmc(String backendId) {
         // With RS present, the existing ledger Mixins supply EMC through inventory for BOTH backends.
         // Without RS, only the BD session Mixin supplies it, through the network snapshot instead.
-        return BD.equals(backendId) && !hasLegacyInventory();
+        return BD.equals(backendId) && !hasRefinedStorageApi();
     }
 }

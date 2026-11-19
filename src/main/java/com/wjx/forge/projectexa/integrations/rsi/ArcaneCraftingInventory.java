@@ -21,13 +21,15 @@ import java.util.Map;
 /** RSI-only virtual backpack. Never installed on the player's general item capability. */
 public final class ArcaneCraftingInventory implements IItemHandler {
     private final ServerPlayer player;
+    private final boolean mainInventory;
     private final List<ItemStack> templates;
     private final List<IItemHandler> physicalBackpacks;
     private final Map<CraftingResolver.StackKey, Long> pending;
 
-    public ArcaneCraftingInventory(ServerPlayer player, List<IItemHandler> backpacks,
+    public ArcaneCraftingInventory(ServerPlayer player, boolean mainInventory, List<IItemHandler> backpacks,
                                   Map<CraftingResolver.StackKey, Long> pending) {
         this.player = player;
+        this.mainInventory = mainInventory;
         this.physicalBackpacks = backpacks.stream()
                 .filter(handler -> !(handler instanceof ArcaneCraftingInventory)).toList();
         this.pending = pending;
@@ -37,9 +39,6 @@ public final class ArcaneCraftingInventory implements IItemHandler {
             for (ItemInfo info : provider.hasFullKnowledge()
                     ? EMCMappingHandler.getMappedItems() : provider.getKnowledge()) {
                 ItemStack stack = Util.cleanStack(info.createStack());
-                // RSI reads maximum damage before its strict runtime identity comparison.
-                // Some mods create empty NBT during that read, even for ordinary ingredients.
-                stack.getMaxDamage();
                 if (safeTemplate(stack, provider)) unique.putIfAbsent(key(stack), stack);
             }
         }
@@ -47,64 +46,17 @@ public final class ArcaneCraftingInventory implements IItemHandler {
     }
 
     public static CraftingResolver.StackKey key(ItemStack stack) {
-        return new CraftingResolver.StackKey(stack.getItem(), stack.hasTag() ? stack.getTag().toString() : null);
-    }
-
-    /** Adapt only our tablet's exact-reservation request, never RSI's global matching rules. */
-    public static ItemStack exactReservationTemplate(ServerPlayer player, ItemStack template, int needed,
-                                                     List<IItemHandler> backpacks) {
-        if (needed <= 0 || template.isEmpty() || !emptyTag(template)
-                || !PacketOpenArcaneTransmutationTablet.hasTablet(player)) return template;
-
-        List<ItemStack> physical = new ArrayList<>(player.getInventory().items);
-        // Mirror the exact-int ledger path: main inventory and usable backpack slots, not offhand.
-        for (IItemHandler backpack : backpacks) {
-            if (backpack instanceof ArcaneCraftingInventory) continue;
-            try {
-                for (int slot = 0; slot < backpack.getSlots(); slot++) {
-                    ItemStack stack = backpack.getStackInSlot(slot);
-                    if (!stack.isEmpty() && !protectedStack(stack)) physical.add(stack);
-                }
-            } catch (RuntimeException ignored) {
-                // Leave an unreadable handler to the ledger's own error policy.
-            }
-        }
-        // Prefer the unmodified request whenever its exact representation is already sufficient.
-        if (coversExact(physical, template, needed)) return template;
-        for (ItemStack actual : physical) {
-            if (!actual.isEmpty() && actual.getItem() == template.getItem() && emptyTag(actual)
-                    && actual.areCapsCompatible(template) && coversExact(physical, actual, needed)) {
-                // Keep the real item's representation on a COPY. Never clear NBT on live items,
-                // invent catalyst stock, count it as EMC, or weaken the subsequent native checks.
-                return actual.copyWithCount(template.getCount());
-            }
-        }
-        return template;
-    }
-
-    private static boolean emptyTag(ItemStack stack) {
-        return stack.getTag() == null || stack.getTag().isEmpty();
-    }
-
-    private static boolean coversExact(List<ItemStack> physical, ItemStack template, int needed) {
-        long count = 0;
-        for (ItemStack stack : physical) {
-            if (ItemStack.isSameItemSameTags(stack, template)) {
-                count += stack.getCount();
-                if (count >= needed) return true;
-            }
-        }
-        return false;
+        return CraftingResolver.StackKey.of(stack, true);
     }
 
     /** Replaces an unbudgeted virtual view with one aware of this ledger's pending reservations. */
-    public static List<IItemHandler> append(ServerPlayer player, List<IItemHandler> sources,
+    public static List<IItemHandler> append(ServerPlayer player, boolean mainInventory, List<IItemHandler> sources,
                                            Map<CraftingResolver.StackKey, Long> pending) {
         List<IItemHandler> result = new ArrayList<>();
         for (IItemHandler source : sources) {
             if (!(source instanceof ArcaneCraftingInventory)) result.add(source);
         }
-        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, result, pending);
+        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, mainInventory, result, pending);
         if (virtual.getSlots() > 0) result.add(virtual);
         return result;
     }
@@ -142,22 +94,14 @@ public final class ArcaneCraftingInventory implements IItemHandler {
     }
 
     private long physicalCount(ItemStack template) {
-        return physicalCount(player, physicalBackpacks, template);
-    }
-
-    public static long physicalCount(ServerPlayer player, List<IItemHandler> backpacks, ItemStack template) {
-        // RSI's pendingInv keys treat absent and empty NBT as the same reservation.
-        // Reconstructing that key loses an empty tag (e.g. on a philosopher's stone).
-        // Count physical coverage with the SAME identity, or an already-reserved real
-        // catalyst is charged to EMC again and can invalidate every virtual material.
-        // This is reservation accounting only; RSI still checks runtime extraction.
         CraftingResolver.StackKey expected = key(template);
         long total = 0;
-        for (ItemStack stack : player.getInventory().items) {
-            if (expected.equals(key(stack))) total += stack.getCount();
+        if (mainInventory) {
+            for (ItemStack stack : player.getInventory().items) {
+                if (expected.equals(key(stack))) total += stack.getCount();
+            }
         }
-        for (IItemHandler backpack : backpacks) {
-            if (backpack instanceof ArcaneCraftingInventory) continue;
+        for (IItemHandler backpack : physicalBackpacks) {
             for (int slot = 0; slot < backpack.getSlots(); slot++) {
                 ItemStack stack = backpack.getStackInSlot(slot);
                 if (expected.equals(key(stack))

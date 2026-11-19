@@ -15,7 +15,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
 
-/** Selects compatible JEI transfer, RSI layout and RSI storage integration Mixins. */
+/** Selects optional integrations without loading target classes during startup. */
 public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
     private static final String RECIPE_TRANSFER_BUTTON = "mezz.jei.gui.recipes.RecipeTransferButton";
     private static final String MODERN_MIXIN =
@@ -31,11 +31,12 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
                     + "Ljava/util/function/Supplier;Ljava/lang/Runnable;)"
                     + "Lmezz/jei/gui/recipes/RecipeTransferButton;";
 
-    private static final Set<String> LEGACY_RSI_INVENTORY_MIXINS = Set.of(
+    private static final Set<String> RSI_INVENTORY_MIXINS = Set.of(
             "com.wjx.forge.projectexa.mixin.RsiExtractionLedgerAccessor",
-            "com.wjx.forge.projectexa.mixin.RsiExtractionLedgerMixin");
-    private static final String RSI_PLAN_SCREEN =
-            "com.huanghuang.rsintegration.crafting.plan.CraftingPlanScreen";
+            "com.wjx.forge.projectexa.mixin.RsiExtractionLedgerMixin",
+            "com.wjx.forge.projectexa.mixin.RsiTypedMaterialSourcesMixin");
+    private static final String RSI_EXTENSION_API =
+            "com.huanghuang.rsintegration.api.RSIItemRetrievalFallback";
     private static final String BD_SESSION_MIXIN =
             "com.wjx.forge.projectexa.mixin.RsiBeyondDimensionsSessionMixin";
 
@@ -54,36 +55,6 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
             return hasMethod(targetClassName, "getElementTotalWidth", "()I")
                     && hasClass("fi.dy.masa.malilib.gui.button.ButtonGeneric");
         }
-        if (mixinClassName.endsWith(".RsiLegacyPlanLayoutMixin")
-                || mixinClassName.endsWith(".RsiPlanRenderEngineMixin")) {
-            return hasMethod(RSI_PLAN_SCREEN, "layoutContentSections", "(Lnet/minecraft/client/gui/Font;I)V");
-        }
-        if (mixinClassName.endsWith(".RsiWorkspacePlanLayoutMixin")
-                || mixinClassName.endsWith(".RsiMaterialTableMixin")
-                || mixinClassName.endsWith(".RsiMaterialTableRowAccessor")) {
-            return hasMethod(RSI_PLAN_SCREEN, "layoutWorkspace", "()V");
-        }
-        if (mixinClassName.endsWith(".RsiMaterialSourcesMixin")
-                || mixinClassName.endsWith(".RsiTypedMaterialSourcesMixin")) {
-            boolean typedInventory = hasMethod("com.huanghuang.rsintegration.crafting.MaterialSources",
-                    "countInventoryForTypes", "(Lnet/minecraft/world/entity/player/Player;Ljava/util/Set;)Ljava/util/Map;");
-            return RsiStorageCompat.hasLegacyInventory()
-                    && typedInventory == mixinClassName.endsWith(".RsiTypedMaterialSourcesMixin");
-        }
-        if (mixinClassName.endsWith(".RsiWorldPickClientMixin")
-                || mixinClassName.endsWith(".RsiWorldPickInvoker")) {
-            return supportsRsiWorldPick();
-        }
-        if (mixinClassName.endsWith(".RsiJeiMiddleClickMixin")
-                || mixinClassName.endsWith(".RsiJeiStoragePullMixin")
-                || mixinClassName.endsWith(".RsiJeiStoragePullInvoker")) {
-            return hasMethod("com.huanghuang.rsintegration.mods.jei.JeiStoragePullPacket", "handleOnServer",
-                    "(Lcom/huanghuang/rsintegration/mods/jei/JeiStoragePullPacket;Lnet/minecraft/server/level/ServerPlayer;)V")
-                    && hasMethod("com.huanghuang.rsintegration.mods.jei.JeiStoragePullPacket", "notify",
-                    "(Lnet/minecraft/server/level/ServerPlayer;Ljava/lang/String;[Ljava/lang/Object;)V")
-                    && hasMethod("com.huanghuang.rsintegration.mods.jei.client.JeiCheatShortcuts", "pullFromStorage",
-                    "(Lnet/minecraft/client/gui/screens/Screen;)Z");
-        }
         if (mixinClassName.endsWith(".JeiEmcCheatInputMixin")) {
             return hasClass("mezz.jei.gui.input.handlers.CheatInputHandler");
         }
@@ -93,11 +64,11 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
         // RSI supports Beyond Dimensions without RS. Its ledger still contains
         // legacy RS bytecode, so transforming it without this API forces
         // ModLauncher to resolve a class that is intentionally not installed.
-        if (LEGACY_RSI_INVENTORY_MIXINS.contains(mixinClassName)) {
-            return RsiStorageCompat.hasLegacyInventory();
+        if (RSI_INVENTORY_MIXINS.contains(mixinClassName)) {
+            return hasClass(RSI_EXTENSION_API) && RsiStorageCompat.hasRefinedStorageApi();
         }
         if (BD_SESSION_MIXIN.equals(mixinClassName)) {
-            return !RsiStorageCompat.hasLegacyInventory();
+            return hasClass(RSI_EXTENSION_API) && !RsiStorageCompat.hasRefinedStorageApi();
         }
         if (!RECIPE_TRANSFER_BUTTON.equals(targetClassName)) {
             return true;
@@ -109,13 +80,6 @@ public final class ProjectExaMixinConfigPlugin implements IMixinConfigPlugin {
             return hasCreateMethod(targetClassName, LEGACY_CREATE_DESCRIPTOR);
         }
         return true;
-    }
-
-    public static boolean supportsRsiWorldPick() {
-        return hasMethod("com.huanghuang.rsintegration.client.input.WorldPickClient", "onPickBlock",
-                "(Lnet/minecraftforge/client/event/InputEvent$InteractionKeyMappingTriggered;)V")
-                && hasMethod("com.huanghuang.rsintegration.feature.sidepanel.RSSidePanelClickPacket", "handleSingleClick",
-                "(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/item/ItemStack;BZLjava/util/UUID;)Lnet/minecraft/world/item/ItemStack;");
     }
 
     private static boolean hasClass(String name) {

@@ -35,7 +35,7 @@ public abstract class RsiBeyondDimensionsSessionMixin {
     private void projectexa$includeEmcInCraftingSnapshot(ServerPlayer player, Set<Item> itemTypes,
             CallbackInfoReturnable<StorageSnapshotResult> cir) {
         if (!projectexa$isCraftingCall() || !cir.getReturnValue().successful()) return;
-        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, List.of(), Map.of());
+        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, false, List.of(), Map.of());
         if (virtual.getSlots() == 0) return;
 
         StorageSnapshot snapshot = cir.getReturnValue().snapshot().orElseThrow();
@@ -76,7 +76,7 @@ public abstract class RsiBeyondDimensionsSessionMixin {
         long missing = amount - transferred;
         if (missing <= 0) return;
 
-        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, List.of(), Map.of());
+        ArcaneCraftingInventory virtual = new ArcaneCraftingInventory(player, false, List.of(), Map.of());
         for (int slot = 0; slot < virtual.getSlots(); slot++) {
             ItemStack candidate = virtual.getStackInSlot(slot);
             if (candidate.isEmpty()) continue;

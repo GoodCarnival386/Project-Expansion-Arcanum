@@ -5,6 +5,7 @@ import com.wjx.forge.projectexa.gui.GUICollector;
 import com.wjx.forge.projectexa.gui.GUIArcaneTransmutationTablet;
 import com.wjx.forge.projectexa.gui.GUIStoneTable;
 import com.wjx.forge.projectexa.gui.GUIPersonalEmcWarehouse;
+import com.wjx.forge.projectexa.integrations.rsi.RsiPlanEmcPreview;
 import com.wjx.forge.projectexa.registries.MenuTypes;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.gui.screens.Screen;
@@ -14,6 +15,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -26,6 +28,9 @@ public class ClientRegistration {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         ClientUpdateChecker.start();
+        if (ModList.get().isLoaded("rs_integration")) {
+            event.enqueueWork(RsiPlanEmcPreview::register);
+        }
     }
 
     @SubscribeEvent
