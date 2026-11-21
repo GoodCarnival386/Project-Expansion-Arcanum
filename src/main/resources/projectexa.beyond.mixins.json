@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.wjx.neoforge.projectexa.mixin.beyond",
+  "plugin": "com.wjx.neoforge.projectexa.mixin.beyond.BeyondMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "TerminalMenuMixin",
+    "ResultSlotMixin",
+    "ResultClickMixin",
+    "BatchCraftMixin",
+    "craftlines.SubmitOrderMixin",
+    "craftlines.ReservationMixin"
+  ],
+  "client": [
+    "JeiFillMixin",
+    "EmiFillMixin",
+    "EmiButtonMixin",
+    "craftlines.OrderNodeAccess",
+    "craftlines.OrderScreenMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

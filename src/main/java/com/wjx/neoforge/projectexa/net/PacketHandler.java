@@ -16,12 +16,16 @@ public final class PacketHandler {
     public PacketHandler(IEventBus modEventBus, ArtifactVersion version) {
         modEventBus.addListener(RegisterPayloadHandlersEvent.class, event -> {
             // Station slots, input actions, and EMC retrieval require the same protocol on both sides.
-            PayloadRegistrar registrar = event.registrar(version + "-arcane-features-4");
+            PayloadRegistrar registrar = event.registrar(version + "-arcane-features-5");
             register(registrar);
         });
     }
 
     public void register(PayloadRegistrar registrar) {
+        if (com.wjx.neoforge.projectexa.integrations.beyond.BeyondSupport.terminal())
+            com.wjx.neoforge.projectexa.integrations.beyond.TerminalPackets.register(registrar);
+        if (com.wjx.neoforge.projectexa.integrations.beyond.BeyondSupport.orders())
+            com.wjx.neoforge.projectexa.integrations.beyond.craftlines.OrderPackets.register(registrar);
         registrar.playToServer(PacketArcaneAnvilName.TYPE, PacketArcaneAnvilName.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketArcaneSmithingTransfer.TYPE, PacketArcaneSmithingTransfer.STREAM_CODEC, IPacket::handle);
         registrar.playToServer(PacketJeiTransmute.TYPE, PacketJeiTransmute.STREAM_CODEC, IPacket::handle);

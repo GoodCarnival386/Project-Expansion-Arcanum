@@ -26,6 +26,8 @@ public class ClientEvents {
     public static class ModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
+            if (com.wjx.neoforge.projectexa.integrations.beyond.BeyondSupport.terminal())
+                event.enqueueWork(com.wjx.neoforge.projectexa.integrations.beyond.client.TerminalClient::register);
             ClientUpdateChecker.start();
         }
 

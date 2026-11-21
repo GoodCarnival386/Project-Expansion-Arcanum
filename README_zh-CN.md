@@ -21,5 +21,13 @@ JEI 取物支持 19.57.0.451 与 19.70.0.469，最低版本调整为 19.57.0.451
 
 已继续接入 Ars Nouveau、Create、Goety 的配方补料及 Goety EMC 映射，详见 [接口核对记录](docs/INTEGRATIONS_1_21_1.md)。Botania、TACZ、RSI 的专门配方或枪械联动仍未接入。已有 EMI 奥术终端填充保持原状，新增的跨界面入口属于 JEI 功能。
 
+## 超越维度与合成链
+
+在背包或 Curios 饰品栏携带奥术转化终端，打开超越维度 0.8.10 工作台，在合成结果格下方打开默认关闭的 **EMC 补料**。悬停 JEI 或 EMI 的配方填充按钮可以看见兑换清单和合计。填充会优先使用合成格、背包和网络中的实物，只为缺口扣除个人 EMC。
+
+装有合成链 0.7.3 的 `for-bd0.8` 版时，可在订单预览打开 **本单使用 EMC**。按住 Alt 左击树上的已学中间件切换制作或兑换，再点一次即可恢复制作。悬停 EMC 开关或下单按钮查看报价。下单时一次扣款，涨价会要求重新确认。取消订单时，余下预留材料以实物退回维度网络。
+
+使用 Java 21 执行 `gradlew.bat testBeyondEmc` 可单独验证填充份数、共享余额和订单结算。
+
 ## 开发与限制
 使用 Java 21 执行 gradlew.bat compileJava。日常 `runClient` 和 `build` 直接使用仓库内的 `src/generated/resources`，不需要 Node.js、Bash 或 `-x data`。修改资源模板后才需手动执行 `gradlew.bat data`，并提交生成结果；此可选任务需要 PATH 中的 Node.js、npm，由 Gradle 安装锁定依赖并直接调用 Node。编译通过不代表游戏内功能或旧存档迁移已验收；不要用未备份的重要旧存档进行跨版本升级。
